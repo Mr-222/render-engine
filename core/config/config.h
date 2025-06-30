@@ -115,15 +115,7 @@ struct RecorderConfiguration {
     bool record_from_start;
 };
 
-struct RigidCoupleSimConfiguration {
-    static RigidCoupleSimConfiguration load(const std::string& config_path);
-
-    RigidCoupleConfiguration rigid_couple;
-    DriverConfiguration driver;
-    std::string output_dir;
-};
-
-struct NFMConfiguration {
+struct LFMConfiguration {
     // time
     int reinit_every;
     // domain
@@ -147,7 +139,7 @@ struct NFMConfiguration {
     bool use_static_solid;
     std::string solid_sdf_path;
 
-    static NFMConfiguration Load(const std::string& config_path);
+    static LFMConfiguration Load(const std::string& config_path);
 };
 
 using Configuration = json;
@@ -257,13 +249,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     record_from_start);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    RigidCoupleSimConfiguration,
-    rigid_couple,
-    driver,
-    output_dir);
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    NFMConfiguration,
+    LFMConfiguration,
     reinit_every,
     len_y,
     tile_dim,

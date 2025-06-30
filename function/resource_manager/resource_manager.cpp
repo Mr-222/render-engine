@@ -42,7 +42,7 @@ void ResourceManager::load(Configuration& config)
         objects.emplace_back(Object::fromConfiguration(cfg));
     }
 
-    inlet_angle = config["nfm"]["inlet_angle"];
+    inlet_angle = config["lfm"]["inlet_angle"];
     recorder.init(config);
 }
 

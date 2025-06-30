@@ -19,10 +19,3 @@ Configuration load(const std::string& config_path)
 
     return config;
 }
-
-RigidCoupleSimConfiguration RigidCoupleSimConfiguration::load(const std::string& config_path)
-{
-    std::ifstream f(config_path);
-    RigidCoupleSimConfiguration config = json::parse(f);
-    return config;
-}
