@@ -3,7 +3,7 @@ function shader_target(name)
     set_kind("static")
     add_rules("utils.glsl2spv",
         {
-            outputdir = "$(buildir)/shaders/" .. name,
+            outputdir = "$(builddir)/shaders/" .. name,
             debugsource = is_mode("debug")
         })
     add_packages("glslc")
@@ -19,11 +19,11 @@ function shader_target(name)
             print("spirv-opt not found, no shader optimization will be performed")
             return
         end
-        local folder = "$(buildir)/shaders/" .. name
+        local folder = "$(builddir)/shaders/" .. name
         for _, filepath in ipairs(os.files(folder .. "/*.spv")) do
             os.runv(spirv_opt, { filepath, "-o", filepath .. ".opt", "-O" })
-            os.runv("rm", { filepath })
-            os.runv("mv", { filepath .. ".opt", filepath })
+            os.rm(filepath)
+            os.mv(filepath .. ".opt", filepath)
         end
     end)
 end

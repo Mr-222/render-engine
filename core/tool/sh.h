@@ -22,4 +22,4 @@ std::string replaceInclude(
     const std::string& new_include,
     const std::filesystem::path& in, const std::filesystem::path& out);
 
-std::string glslc(const std::filesystem::path& in, const std::filesystem::path& out);
+void glslc(const std::filesystem::path& in, const std::filesystem::path& out);

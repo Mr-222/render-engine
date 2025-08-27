@@ -1,5 +1,5 @@
 #include "sh.h"
-#include <iostream>
+#include <filesystem>
 
 std::string exec(const std::string& cmd)
 {
@@ -44,7 +44,7 @@ std::string replaceInclude(const std::string& prev_include, const std::string& n
     return sed(expr, in, out);
 }
 
-std::string glslc(const std::filesystem::path& in, const std::filesystem::path& out)
+void glslc(const std::filesystem::path& in, const std::filesystem::path& out)
 {
 #ifdef DEBUG
     std::string debugsource = " -gVS ";
@@ -58,19 +58,14 @@ std::string glslc(const std::filesystem::path& in, const std::filesystem::path& 
         + " -V --target-env vulkan1.2"
         + debugsource;
 #ifdef DEBUG
-    return exec(cmd);
+    exec(cmd);
 #else
     cmd = std::string("spirv-opt -O ")
         + out.string()
         + " -o "
         + out.string() + ".opt";
     exec(cmd);
-    cmd = std::string("rm ")
-        + out.string();
-    exec(cmd);
-    cmd = std::string("mv ")
-        + out.string() + ".opt "
-        + out.string();
-    return exec(cmd);
+    std::filesystem::remove(out.string());
+    std::filesystem::rename(out.string() + ".opt", out.string());
 #endif
 }

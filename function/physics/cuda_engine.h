@@ -1,6 +1,5 @@
 #pragma once
 #include "function/physics/physics_engine.h"
-#include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
 #include <unordered_map>

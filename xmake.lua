@@ -58,10 +58,10 @@ target("engine")
     end
     add_cuflags("--diag-suppress=20012")
     before_build(function (target)
-        os.mkdir("$(buildir)/shaders")
+        os.mkdir("$(builddir)/shaders")
     end)
     after_build(function (target)
-        os.cp("$(scriptdir)/function/render/render_graph/shader/*.glsl", "$(buildir)/shaders")
+        os.cp("$(scriptdir)/function/render/render_graph/shader/*.glsl", "$(builddir)/shaders")
     end)
 
 includes("shader_target.lua")
