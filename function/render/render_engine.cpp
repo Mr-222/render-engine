@@ -72,18 +72,9 @@ void RenderEngine::draw()
         g_ctx->vk.imageAvailableSemaphores[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT],
         VK_NULL_HANDLE,
         &swapchain_index);
-    while (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         onResize();
-        vkWaitForFences(
-            g_ctx->vk.device, 1,
-            &g_ctx->vk.inFlightFences[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT],
-            VK_TRUE, UINT64_MAX);
-        result = vkAcquireNextImageKHR(
-            g_ctx->vk.device, g_ctx->vk.swapChain,
-            UINT64_MAX,
-            g_ctx->vk.imageAvailableSemaphores[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT],
-            VK_NULL_HANDLE,
-            &swapchain_index);
+        return;
     }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");

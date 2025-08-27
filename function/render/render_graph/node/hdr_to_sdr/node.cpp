@@ -84,6 +84,11 @@ void HDRToSDR::createRenderPass()
     render_pass = DefaultRenderPass(attachment_descriptions, helpers, dependency);
 }
 
+void HDRToSDR::updateDescriptor() {
+    pipeline.param.hdr_img = g_ctx.dm.getResourceHandle(attachments->getAttachment(attachment_descriptions["hdr"].name).id);
+    pipeline.param_buf.Update(g_ctx.vk, &pipeline.param, sizeof(Param));
+}
+
 void HDRToSDR::createPipeline(Configuration& cfg)
 {
     {
@@ -194,6 +199,7 @@ void HDRToSDR::onResize()
         vkDestroyFramebuffer(g_ctx.vk.device, framebuffer, nullptr);
     }
     createFramebuffer();
+    updateDescriptor();
 }
 
 void HDRToSDR::destroy()

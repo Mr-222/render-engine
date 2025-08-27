@@ -88,6 +88,11 @@ void CalculateLuminance::createRenderPass()
     render_pass = DefaultRenderPass(attachment_descriptions, helpers, dependency);
 }
 
+void CalculateLuminance::updateDescriptor() {
+    pipeline.param.sdr_img = g_ctx.dm.getResourceHandle(attachments->getAttachment(attachment_descriptions["sdr"].name).id);
+    pipeline.param_buf.Update(g_ctx.vk, &pipeline.param, sizeof(Param));
+}
+
 void CalculateLuminance::createPipeline(Configuration& cfg)
 {
     {
@@ -198,6 +203,7 @@ void CalculateLuminance::onResize()
         vkDestroyFramebuffer(g_ctx.vk.device, framebuffer, nullptr);
     }
     createFramebuffer();
+    updateDescriptor();
 }
 
 void CalculateLuminance::destroy()

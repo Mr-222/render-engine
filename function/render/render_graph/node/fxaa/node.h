@@ -10,6 +10,7 @@ class FXAANode : public RenderGraphNode {
 
     void createRenderPass();
     void createFramebuffer();
+    void updateDescriptor();
     void createPipeline(Configuration& cfg);
 
     Pipeline<Param> pipeline;

@@ -101,6 +101,13 @@ void VorticityFieldNode::createRenderPass()
     render_pass = DefaultRenderPass(attachment_descriptions, helpers, dependency);
 }
 
+void VorticityFieldNode::updateDescriptor()
+{
+    pipeline.param.previous_color = g_ctx.dm.getResourceHandle(attachments->getAttachment(attachment_descriptions["previous_color"].name).id);
+    pipeline.param.previous_depth = g_ctx.dm.getResourceHandle(attachments->getAttachment(attachment_descriptions["previous_depth"].name).id);
+    pipeline.param_buf.Update(g_ctx.vk, &pipeline.param, sizeof(Param));
+}
+
 void VorticityFieldNode::createPipeline(Configuration& cfg)
 {
     {
@@ -264,6 +271,7 @@ void VorticityFieldNode::onResize()
         vkDestroyFramebuffer(g_ctx.vk.device, framebuffer, nullptr);
     }
     createFramebuffer();
+    updateDescriptor();
 }
 
 void VorticityFieldNode::destroy()

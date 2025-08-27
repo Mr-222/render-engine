@@ -89,6 +89,12 @@ void FXAANode::createRenderPass()
     render_pass = DefaultRenderPass(attachment_descriptions, helpers, dependency);
 }
 
+void FXAANode::updateDescriptor()
+{
+    pipeline.param.original_img = g_ctx.dm.getResourceHandle(attachments->getAttachment(attachment_descriptions["original"].name).id);
+    pipeline.param_buf.Update(g_ctx.vk, &pipeline.param, sizeof(Param));
+}
+
 void FXAANode::createPipeline(Configuration& cfg)
 {
     {
@@ -200,6 +206,7 @@ void FXAANode::onResize()
         vkDestroyFramebuffer(g_ctx.vk.device, framebuffer, nullptr);
     }
     createFramebuffer();
+    updateDescriptor();
 }
 
 void FXAANode::destroy()
