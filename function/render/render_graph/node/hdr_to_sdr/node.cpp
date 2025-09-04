@@ -20,6 +20,8 @@ HDRToSDR::HDRToSDR(const std::string& name, const std::string& hdr_buf, const st
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_FORMAT_R32G32B32A32_SFLOAT,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         },
         {
@@ -31,6 +33,8 @@ HDRToSDR::HDRToSDR(const std::string& name, const std::string& hdr_buf, const st
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 is_swapchain ? g_ctx.vk.swapChainImages[0]->format : VK_FORMAT_B8G8R8A8_UNORM,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         }
     };

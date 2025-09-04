@@ -30,6 +30,15 @@ void RenderGraph::clearAttachments()
                 attachment.second.image.image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &range);
         }
+        if (static_cast<uint8_t>(attachment.second.type & RenderAttachmentType::Stencil) != 0) {
+            VkClearDepthStencilValue clearValue = {};
+            clearValue                          = { 0, 0 };
+            range.aspectMask                    = VK_IMAGE_ASPECT_STENCIL_BIT;
+            vkCmdClearDepthStencilImage(
+                g_ctx.vk.commandBuffer,
+                attachment.second.image.image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &range);
+        }
         attachment.second.image.TransitionLayout(g_ctx.vk, layout);
     }
 }
@@ -71,7 +80,7 @@ void RenderGraph::initAttachments()
         }
     }
     for (const auto& desc : descriptions) {
-        attachments.addAttachment(desc.first, desc.second.type, desc.second.usage, desc.second.format);
+        attachments.addAttachment(desc.first, desc.second.type, desc.second.usage, desc.second.format, desc.second.extent, desc.second.numLayers);
     }
 }
 

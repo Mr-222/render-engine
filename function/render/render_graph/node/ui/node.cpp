@@ -18,6 +18,8 @@ UI::UI(const std::string& name, const std::string& color_buf_name, std::function
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 is_swapchain ? g_ctx.vk.swapChainImages[0]->format : VK_FORMAT_B8G8R8A8_UNORM,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         },
     };

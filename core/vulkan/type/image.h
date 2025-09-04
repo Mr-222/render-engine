@@ -19,6 +19,7 @@ struct Image {
                      VkImageAspectFlags aspectFlags,
                      VkMemoryPropertyFlags properties,
                      uint32_t mipLevels       = 1,
+                     uint32_t arrayLayers     = 1,
                      bool external            = false,
                      VkImageTiling tiling     = VK_IMAGE_TILING_OPTIMAL,
                      VkImageType imageType    = VK_IMAGE_TYPE_2D,
@@ -72,6 +73,7 @@ struct Image {
     VkFormat format;
     VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
     size_t size;
+    size_t numLayers;
 
     VkSampler sampler = VK_NULL_HANDLE;
 };

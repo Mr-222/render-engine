@@ -19,6 +19,8 @@ Record::Record(const std::string& name, const std::string& color_buf_name)
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 is_swapchain ? g_ctx.vk.swapChainImages[0]->format : VK_FORMAT_B8G8R8A8_UNORM,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         },
     };

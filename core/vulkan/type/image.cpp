@@ -14,6 +14,7 @@ Image Image::New(const Context& ctx,
                  VkImageAspectFlags aspectFlags,
                  VkMemoryPropertyFlags properties,
                  uint32_t mipLevels,
+                 uint32_t arrayLayers,
                  bool external,
                  VkImageTiling tiling,
                  VkImageType imageType,
@@ -22,11 +23,12 @@ Image Image::New(const Context& ctx,
     Image i;
     i.CreateUUID();
     i.size    = createImage(ctx, extent, format, usage, properties, i.image, i.memory, external, tiling, imageType, mipLevels);
-    i.view    = createImageView(ctx, i.image, format, aspectFlags, viewType, mipLevels);
+    i.view    = createImageView(ctx, i.image, format, aspectFlags, viewType, mipLevels, arrayLayers);
     i.format  = format;
     i.extent  = extent;
     i.layout  = VK_IMAGE_LAYOUT_UNDEFINED;
     i.sampler = VK_NULL_HANDLE;
+    i.numLayers = arrayLayers;
     return i;
 }
 
@@ -38,13 +40,13 @@ void Image::CreateUUID()
 
 void Image::TransitionLayout(const Context& ctx, VkImageLayout newLayout)
 {
-    transitionImageLayout(ctx.commandBuffer, image, format, layout, newLayout);
+    transitionImageLayout(ctx.commandBuffer, image, format, numLayers,layout, newLayout);
     layout = newLayout;
 }
 
 void Image::TransitionLayoutSingleTime(const Context& ctx, VkImageLayout newLayout)
 {
-    transitionImageLayoutSingleTime(ctx, image, format, layout, newLayout);
+    transitionImageLayoutSingleTime(ctx, image, format, numLayers, layout, newLayout);
     layout = newLayout;
 }
 

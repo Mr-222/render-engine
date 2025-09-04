@@ -19,4 +19,6 @@ struct RenderAttachmentDescription {
     VkImageLayout layout;
     VkImageUsageFlags usage;
     VkFormat format;
+    VkExtent3D extent;
+    uint32_t numLayers;
 };

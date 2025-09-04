@@ -67,25 +67,29 @@ VkDeviceSize createImage(
     bool external               = false,
     const VkImageTiling tiling  = VK_IMAGE_TILING_OPTIMAL,
     const VkImageType imageType = VK_IMAGE_TYPE_2D,
-    const uint32_t mipLevels    = 1);
+    const uint32_t mipLevels    = 1,
+    const uint32_t arrayLayers  = 1);
 VkImageView createImageView(
     const Vk::Context& ctx,
     VkImage image,
     VkFormat format,
     VkImageAspectFlags aspectFlags,
     VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D,
-    const uint32_t mipLevels = 1);
+    const uint32_t mipLevels = 1,
+    const uint32_t arrayLayers = 1);
 
 void transitionImageLayout(
     VkCommandBuffer commandBuffer,
     VkImage image,
     VkFormat format,
+    uint32_t numLayers,
     VkImageLayout oldLayout,
     VkImageLayout newLayout);
 void transitionImageLayoutSingleTime(
     const Vk::Context& ctx,
     VkImage image,
     VkFormat format,
+    uint32_t numLayers,
     VkImageLayout oldLayout,
     VkImageLayout newLayout);
 

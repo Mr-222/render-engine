@@ -81,7 +81,8 @@ VkDeviceSize createImage(
     bool external,
     const VkImageTiling tiling,
     const VkImageType imageType,
-    const uint32_t mipLevels)
+    const uint32_t mipLevels,
+    const uint32_t arrayLayers)
 {
     VkExternalMemoryImageCreateInfo externalImageInfo = {};
     externalImageInfo.sType                           = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
@@ -96,7 +97,7 @@ VkDeviceSize createImage(
     imageInfo.imageType     = imageType;
     imageInfo.extent        = extent;
     imageInfo.mipLevels     = mipLevels;
-    imageInfo.arrayLayers   = 1;
+    imageInfo.arrayLayers   = arrayLayers;
     imageInfo.format        = format;
     imageInfo.tiling        = tiling;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -154,7 +155,8 @@ VkImageView createImageView(
     VkFormat format,
     VkImageAspectFlags aspectFlags,
     VkImageViewType viewType,
-    const uint32_t mipLevels)
+    const uint32_t mipLevels,
+    const uint32_t arrayLayers)
 {
     VkImageViewCreateInfo viewInfo {};
     viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -165,7 +167,7 @@ VkImageView createImageView(
     viewInfo.subresourceRange.baseMipLevel   = 0;
     viewInfo.subresourceRange.levelCount     = mipLevels;
     viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount     = 1;
+    viewInfo.subresourceRange.layerCount     = arrayLayers;
 
     VkImageView imageView;
     if (vkCreateImageView(ctx.device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
@@ -328,9 +330,11 @@ void transitionImageLayout(
     VkCommandBuffer commandBuffer,
     VkImage image,
     VkFormat format,
+    uint32_t numLayers,
     VkImageLayout oldLayout,
     VkImageLayout newLayout)
 {
+    assert(numLayers > 0 && numLayers <= 512);
     VkImageMemoryBarrier barrier {};
     barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout                       = oldLayout;
@@ -342,14 +346,14 @@ void transitionImageLayout(
     barrier.subresourceRange.baseMipLevel   = 0;
     barrier.subresourceRange.levelCount     = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount     = 1;
+    barrier.subresourceRange.layerCount     = numLayers;
     barrier.srcAccessMask                   = 0; // TODO
     barrier.dstAccessMask                   = 0; // TODO
 
     assert(format != VK_FORMAT_D32_SFLOAT_S8_UINT && format != VK_FORMAT_D24_UNORM_S8_UINT);
 
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     } else {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
@@ -381,11 +385,12 @@ void transitionImageLayoutSingleTime(
     const Vk::Context& ctx,
     VkImage image,
     VkFormat format,
+    uint32_t numLayers,
     VkImageLayout oldLayout,
     VkImageLayout newLayout)
 {
     singleTimeCommands(ctx, [&](const VkCommandBuffer& commandBuffer) {
-        transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout);
+        transitionImageLayout(commandBuffer, image, format, numLayers, oldLayout, newLayout);
     });
 }
 
@@ -402,7 +407,9 @@ void copyBufferToImage(
 {
     transitionImageLayout(
         commandBuffer,
-        image, format,
+        image,
+        format,
+        1,
         imageLayout,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -432,7 +439,9 @@ void copyBufferToImage(
 
     transitionImageLayout(
         commandBuffer,
-        image, format,
+        image,
+        format,
+        1,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         imageLayout);
 }
@@ -468,6 +477,7 @@ void copyImageToBuffer(
         commandBuffer,
         image,
         format,
+        1,
         imageLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -489,6 +499,7 @@ void copyImageToBuffer(
     transitionImageLayout(commandBuffer,
                           image,
                           format,
+                          1,
                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                           imageLayout);
 }
@@ -527,12 +538,14 @@ void copyImageToImage(
         commandBuffer,
         src,
         srcFormat,
+        1,
         srcLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     transitionImageLayout(
         commandBuffer,
         dst,
         dstFormat,
+        1,
         dstLayout,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -559,12 +572,14 @@ void copyImageToImage(
         commandBuffer,
         src,
         srcFormat,
+        1,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         srcLayout);
     transitionImageLayout(
         commandBuffer,
         dst,
         dstFormat,
+        1,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         dstLayout);
 }

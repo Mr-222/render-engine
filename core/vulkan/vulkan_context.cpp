@@ -340,12 +340,13 @@ void Context::createSwapChain()
     for (int i = 0; i < imageCount; i++) {
         swapChainImages.emplace_back(std::make_unique<Image>());
 
-        auto& swapChainImage  = swapChainImages.back();
-        swapChainImage->image = images[i];
+        auto& swapChainImage     = swapChainImages.back();
+        swapChainImage->image     = images[i];
         swapChainImage->CreateUUID();
-        swapChainImage->size   = extent.width * extent.height * 4; // unorm
-        swapChainImage->format = surfaceFormat.format;
-        swapChainImage->extent = VkExtent3D { extent.width, extent.height, 1 };
+        swapChainImage->size      = extent.width * extent.height * 4; // unorm
+        swapChainImage->format    = surfaceFormat.format;
+        swapChainImage->extent    = VkExtent3D { extent.width, extent.height, 1 };
+        swapChainImage->numLayers = 1;
         swapChainImage->TransitionLayoutSingleTime(*this, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }

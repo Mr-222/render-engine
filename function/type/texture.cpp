@@ -111,6 +111,7 @@ Vk::Image Texture::loadExternalImage(const std::string& path)
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         1,
+        1,
         false,
         tiling);
     image.Update(g_ctx.vk, ptr);
@@ -137,6 +138,7 @@ Texture Texture::loadDefaultColorTexture()
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
         1,
         false,
         VK_IMAGE_TILING_LINEAR);
@@ -165,6 +167,7 @@ Texture Texture::loadDefaultMetallicTexture()
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         1,
+        1,
         false,
         VK_IMAGE_TILING_OPTIMAL);
     texture.image.Update(g_ctx.vk, metallic.data());
@@ -191,6 +194,7 @@ Texture Texture::loadDefaultRoughnessTexture()
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
         1,
         false,
         VK_IMAGE_TILING_OPTIMAL);
@@ -219,6 +223,7 @@ Texture Texture::loadDefaultNormalTexture()
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         1,
+        1,
         false,
         VK_IMAGE_TILING_OPTIMAL);
     texture.image.Update(g_ctx.vk, normal.data());
@@ -245,6 +250,7 @@ Texture Texture::loadDefaultAoTexture()
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
         1,
         false,
         VK_IMAGE_TILING_OPTIMAL);

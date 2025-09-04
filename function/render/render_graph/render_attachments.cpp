@@ -20,23 +20,34 @@ VkImageAspectFlags RenderAttachments::getAspectFlags(RenderAttachmentType type)
     if (static_cast<uint8_t>(type & RenderAttachmentType::Depth) != 0) {
         aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
     }
+    if (static_cast<uint8_t>(type & RenderAttachmentType::Stencil) != 0) {
+        aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
     return aspectFlags;
 }
 
-void RenderAttachments::addAttachment(const std::string& name, RenderAttachmentType type, VkImageUsageFlags usage, VkFormat format)
+void RenderAttachments::addAttachment(const std::string& name, RenderAttachmentType type, VkImageUsageFlags usage, VkFormat format, VkExtent3D extent, size_t numLayers)
 {
     assert(name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
+    assert(numLayers > 0 && numLayers <= 512);
     RenderAttachment attachment;
     attachment.name  = name;
     attachment.type  = type;
     attachment.usage = usage;
+
     attachment.image = Image::New(
         g_ctx.vk,
         format,
-        g_ctx.vk.swapChainImages[0]->extent,
+        extent,
         usage,
         getAspectFlags(type),
-        VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
+        VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,
+        1,
+        numLayers,
+        false,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_TYPE_2D,
+        numLayers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
     attachment.image.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_GENERAL);
     if (static_cast<uint8_t>(type & RenderAttachmentType::Sampler) != 0) {
         attachment.image.AddDefaultSampler(g_ctx.vk);
@@ -65,6 +76,10 @@ Vk::Image& RenderAttachments::getAttachment(const std::string& name)
 void RenderAttachments::onResize()
 {
     for (auto& a : attachments) {
+        if (static_cast<uint8_t>(a.second.type & RenderAttachmentType::DontRecreateOnResize) != 0) {
+            continue;
+        }
+
         auto id = a.second.image.id;
         if (a.second.image.sampler != VK_NULL_HANDLE)
             g_ctx.dm.removeResourceRegistration(id);
@@ -76,7 +91,11 @@ void RenderAttachments::onResize()
             g_ctx.vk.swapChainImages[0]->extent,
             a.second.usage,
             getAspectFlags(a.second.type),
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            1,
+            a.second.image.numLayers,
+            false,
+            VK_IMAGE_TILING_OPTIMAL);
         a.second.image.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_GENERAL);
         a.second.image.id = id;
         if (static_cast<uint8_t>(a.second.type & RenderAttachmentType::Sampler) != 0) {

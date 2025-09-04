@@ -8,3 +8,4 @@
 #include "./smoke_field/node.h"
 #include "./ui/node.h"
 #include "./vorticity_field/node.h"
+#include "./voxelization/node.h"

@@ -107,6 +107,7 @@ void Field::initFieldImage(const FieldConfiguration& cfg)
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         1,
+        1,
         true,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_TYPE_3D,
@@ -220,6 +221,7 @@ void Fields::initFireColorImage(FieldsConfiguration& cfg)
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
         1,
         false,
         VK_IMAGE_TILING_LINEAR);

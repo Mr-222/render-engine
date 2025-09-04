@@ -1,6 +1,5 @@
 #pragma once
 
-#include "function/render/render_graph/node/node.h"
 #include "function/render/render_graph/render_graph.h"
 
 class DefaultGraph : public RenderGraph {

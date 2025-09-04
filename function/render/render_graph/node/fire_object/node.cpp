@@ -21,6 +21,8 @@ FireObject::FireObject(const std::string& name, const std::string& color_buf_nam
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_FORMAT_R32G32B32A32_SFLOAT,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         },
         {
@@ -32,6 +34,8 @@ FireObject::FireObject(const std::string& name, const std::string& color_buf_nam
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_FORMAT_D32_SFLOAT,
+                g_ctx.vk.swapChainImages[0]->extent,
+                1,
             },
         }
     };
