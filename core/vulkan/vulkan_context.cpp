@@ -156,10 +156,16 @@ bool Context::checkDeviceExtensionSupport(VkPhysicalDevice device)
 bool Context::isDeviceSuitable(VkPhysicalDevice device)
 {
     VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    deviceFeatures.samplerAnisotropy = VK_TRUE;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures = {};
+    multiviewFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+
+    VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &multiviewFeatures;
+
+    vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
 
     QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(device, surface);
 
@@ -174,8 +180,9 @@ bool Context::isDeviceSuitable(VkPhysicalDevice device)
     }
 
     return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
-        && deviceFeatures.geometryShader
-        && deviceFeatures.samplerAnisotropy
+        && deviceFeatures2.features.geometryShader
+        && deviceFeatures2.features.samplerAnisotropy
+        && multiviewFeatures.multiview
         && indices.isComplete()
         && extensionsSupported
         && swapChainAdequate;
@@ -222,9 +229,13 @@ void Context::createLogicalDeviceAndQueue()
     descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
     descriptorIndexingFeatures.pNext = nullptr;
 
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures = {};
+    multiviewFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+    multiviewFeatures.pNext = &descriptorIndexingFeatures;
+
     VkPhysicalDeviceFeatures2 deviceFeatures {};
     deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    deviceFeatures.pNext = &descriptorIndexingFeatures;
+    deviceFeatures.pNext = &multiviewFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
     assert(descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing);
     assert(descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind);
@@ -232,6 +243,7 @@ void Context::createLogicalDeviceAndQueue()
     assert(descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind);
     assert(descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
     assert(descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind);
+    assert(multiviewFeatures.multiview);
 
     VkDeviceCreateInfo createInfo {};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
