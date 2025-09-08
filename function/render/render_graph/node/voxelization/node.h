@@ -4,25 +4,32 @@
 
 class Voxelization : public RenderGraphNode {
     struct Param {
-        Vk::DescriptorHandle camera;
+        Vk::DescriptorHandle voxelizationViewMat;
+        Vk::DescriptorHandle voxelizationProjMats;
     };
 
+    void createMatsBuffer();
     void createRenderPass();
     void createFramebuffer();
     void createPipeline(Configuration& cfg);
 
+    static constexpr uint32_t VOXEL_GRID_SIZE = 128;
     Pipeline<Param> pipeline;
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
+    glm::mat4 view_mat;
+    Vk::Buffer view_mat_buffer;
+    std::array<glm::mat4, VOXEL_GRID_SIZE> proj_mats;
+    Vk::Buffer proj_mats_buffer;
 
 public:
     Voxelization(
         const std::string& name,
         const std::string& voxel_buf_name);
 
-    virtual void init(Configuration& cfg, RenderAttachments& attachments) override;
-    virtual void record(uint32_t swapchain_index) override;
-    virtual void onResize() override;
-    virtual void destroy() override;
+    void init(Configuration& cfg, RenderAttachments& attachments) override;
+    void record(uint32_t swapchain_index) override;
+    void onResize() override;
+    void destroy() override;
 };

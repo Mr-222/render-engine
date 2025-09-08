@@ -30,7 +30,9 @@ VkRenderPass RenderGraphNode::DefaultRenderPass(
     std::vector<VkAttachmentReference> colorAttachmentRefs {};
     VkAttachmentReference depthAttachmentRef {};
     for (const auto& d : desc) {
-        if (static_cast<uint8_t>(attachment_descriptions[d.name].type & RenderAttachmentType::Depth) != 0) {
+        if (static_cast<uint8_t>(attachment_descriptions[d.name].type & RenderAttachmentType::Depth) != 0 ||
+            static_cast<uint8_t>(attachment_descriptions[d.name].type & RenderAttachmentType::Stencil) != 0)
+        {
             assert(!has_depth_stencil);
             has_depth_stencil  = true;
             depthAttachmentRef = {

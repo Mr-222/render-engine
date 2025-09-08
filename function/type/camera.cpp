@@ -2,7 +2,7 @@
 #include "core/math/math.h"
 #include "core/tool/logger.h"
 #include "function/global_context.h"
-#include <cstring>
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
