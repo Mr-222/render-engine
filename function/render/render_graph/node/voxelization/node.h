@@ -12,8 +12,10 @@ class Voxelization : public RenderGraphNode {
     void createRenderPass();
     void createFramebuffer();
     void createPipeline(Configuration& cfg);
+    void setViewportAndScissor();
 
     static constexpr uint32_t VOXEL_GRID_SIZE = 128;
+
     Pipeline<Param> pipeline;
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;

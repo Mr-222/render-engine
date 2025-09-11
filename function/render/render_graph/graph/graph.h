@@ -2,3 +2,4 @@
 #include "./fire_field/graph.h"
 #include "./smoke_field/graph.h"
 #include "./vorticity_field/graph.h"
+#include "./voxelization/graph.h"

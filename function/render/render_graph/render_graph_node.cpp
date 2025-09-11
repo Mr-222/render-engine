@@ -13,14 +13,15 @@ VkRenderPass RenderGraphNode::DefaultRenderPass(
 {
     std::vector<VkAttachmentDescription> attachments;
     for (const auto& d : desc) {
+        bool isStencilAttachment = static_cast<uint8_t>(attachment_descriptions[d.name].type & RenderAttachmentType::Stencil) != 0;
         attachments.push_back(
             {
                 .format         = attachment_descriptions[d.name].format,
                 .samples        = VK_SAMPLE_COUNT_1_BIT,
                 .loadOp         = static_cast<VkAttachmentLoadOp>(d.load_op),
                 .storeOp        = static_cast<VkAttachmentStoreOp>(d.store_op),
-                .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                .stencilLoadOp  = isStencilAttachment ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_LOAD,
+                .stencilStoreOp = isStencilAttachment ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
                 .initialLayout  = attachment_descriptions[d.name].layout,
                 .finalLayout    = attachment_descriptions[d.name].layout,
             });
