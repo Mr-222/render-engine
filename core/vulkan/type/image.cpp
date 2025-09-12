@@ -22,7 +22,7 @@ Image Image::New(const Context& ctx,
 {
     Image i;
     i.CreateUUID();
-    i.size    = createImage(ctx, extent, format, usage, properties, i.image, i.memory, external, tiling, imageType, mipLevels);
+    i.size    = createImage(ctx, extent, format, usage, properties, i.image, i.memory, external, tiling, imageType, mipLevels, arrayLayers);
     i.view    = createImageView(ctx, i.image, format, aspectFlags, viewType, mipLevels, arrayLayers);
     i.format  = format;
     i.extent  = extent;

@@ -9,6 +9,7 @@ function shader_target(name)
     add_packages("glslc")
     add_files("**/node/" .. name .. "/*.vert")
     add_files("**/node/" .. name .. "/*.frag")
+    add_files("**/node/" .. name .. "/*.geom")
     after_build(function(target)
         if not is_mode("release") then
             return

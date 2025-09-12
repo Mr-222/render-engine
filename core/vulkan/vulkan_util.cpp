@@ -357,10 +357,11 @@ void transitionImageLayout(
     } else {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-    if (format == VK_FORMAT_D32_SFLOAT_S8_UINT
-        || format == VK_FORMAT_D24_UNORM_S8_UINT
-        || format == VK_FORMAT_D32_SFLOAT) {
+
+    if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT|| format == VK_FORMAT_D32_SFLOAT) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else if (format == VK_FORMAT_S8_UINT) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
     const auto sourceDependency      = layoutDependencies.find(oldLayout);

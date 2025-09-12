@@ -39,6 +39,8 @@ void RenderEngine::initRenderGraph(std::function<void(VkCommandBuffer)> fn, std:
 
     if (render_graph_cfg.name == "default") {
         render_graph = std::make_unique<DefaultGraph>();
+    } else if (render_graph_cfg.name == "voxelization") {
+        render_graph = std::make_unique<VoxelizationGraph>();
     } else if (render_graph_cfg.name == "smoke_field") {
         render_graph = std::make_unique<SmokeFieldGraph>();
     } else if (render_graph_cfg.name == "fire_field") {

@@ -23,7 +23,7 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_buf
                 RenderAttachmentType::Stencil | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_FORMAT_S8_UINT,
                 { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
                 VOXEL_GRID_SIZE,
@@ -60,9 +60,9 @@ void Voxelization::createMatsBuffer()
 
     // Near plane matches the depth of the current slice
     for (int i = 1; i <= VOXEL_GRID_SIZE; ++i) {
-        constexpr int left = -5.f, right = 5.f, bottom = -5.f, top = 5.f, farPlane = 20.f;
-        constexpr int step = 10.f / VOXEL_GRID_SIZE;
-        proj_mats[i - 1] = glm::ortho(left, right, bottom, top, i * step, farPlane);
+        constexpr float left = -5.f, right = 5.f, bottom = -5.f, top = 5.f, farPlane = 20.f;
+        constexpr float step = 10.f / VOXEL_GRID_SIZE;
+        proj_mats[i - 1] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step, farPlane);
         proj_mats[i - 1][1][1] *= -1;
     }
     proj_mats_buffer = Buffer::New(
@@ -126,6 +126,27 @@ void Voxelization::createPipeline(Configuration& cfg)
     }
 
     {
+        auto getVertexInputeState = [] {
+            static VkVertexInputBindingDescription bindingDescription {};
+            bindingDescription.binding   = 0;
+            bindingDescription.stride    = sizeof(Vertex);
+            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+            static VkVertexInputAttributeDescription attributeDescription {};
+            attributeDescription.binding  = 0;
+            attributeDescription.location = 0;
+            attributeDescription.format   = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescription.offset   = offsetof(Vertex, pos);
+
+            VkPipelineVertexInputStateCreateInfo vertexInput {};
+            vertexInput.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInput.vertexBindingDescriptionCount   = 1;
+            vertexInput.pVertexBindingDescriptions      = &bindingDescription;
+            vertexInput.vertexAttributeDescriptionCount = 1;
+            vertexInput.pVertexAttributeDescriptions    = &attributeDescription;
+            return vertexInput;
+        };
+
         auto getRasterizationState = [] {
             VkPipelineRasterizationStateCreateInfo rasterizer {};
             rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -140,16 +161,18 @@ void Voxelization::createPipeline(Configuration& cfg)
         };
 
         auto getViewportState = [] {
-            VkViewport viewport {};
+            static VkViewport viewport {};
             viewport.x        = 0.0f;
             viewport.y        = 0.0f;
             viewport.width    = static_cast<float>(VOXEL_GRID_SIZE);
             viewport.height   = static_cast<float>(VOXEL_GRID_SIZE);
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
-            VkRect2D scissor {};
+
+            static VkRect2D scissor {};
             scissor.offset = { 0, 0 };
             scissor.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
+
             VkPipelineViewportStateCreateInfo viewportState {};
             viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.viewportCount = 1;
@@ -159,7 +182,7 @@ void Voxelization::createPipeline(Configuration& cfg)
             return viewportState;
         };
 
-        VertexInputDefault(true);
+        auto vertexInput   = getVertexInputeState();
         DynamicStateDefault();
         auto viewportState = getViewportState();
         auto inputAssembly = Pipeline<Param>::inputAssemblyDefault();
@@ -167,12 +190,15 @@ void Voxelization::createPipeline(Configuration& cfg)
         auto multisample   = Pipeline<Param>::multisampleDefault();
 
         JSON_GET(RenderGraphConfiguration, rg_cfg, cfg, "render_graph");
-        auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/default_object/node.vert.spv");
-        auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/default_object/node.frag.spv");
+        auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.vert.spv");
+        auto geomShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.geom.spv");
+        auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.frag.spv");
         auto vertShaderModule  = createShaderModule(g_ctx.vk, vertShaderCode);
+        auto geomShaderModule  = createShaderModule(g_ctx.vk, geomShaderCode);
         auto fragShaderModule  = createShaderModule(g_ctx.vk, fragShaderCode);
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
             Pipeline<Param>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
+            Pipeline<Param>::shaderStageDefault(geomShaderModule, VK_SHADER_STAGE_GEOMETRY_BIT),
             Pipeline<Param>::shaderStageDefault(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT),
         };
         VkPipelineColorBlendStateCreateInfo colorBlending {};
@@ -180,15 +206,14 @@ void Voxelization::createPipeline(Configuration& cfg)
         colorBlending.logicOpEnable    = VK_FALSE;
         colorBlending.attachmentCount  = 0;
         colorBlending.pAttachments     = nullptr;
+
         VkPipelineDepthStencilStateCreateInfo depthStencil {};
         depthStencil.sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencil.depthTestEnable   = VK_FALSE;
         depthStencil.depthWriteEnable  = VK_FALSE;
-        depthStencil.depthCompareOp    = VK_COMPARE_OP_LESS;
-        depthStencil.stencilTestEnable = VK_TRUE;
 
         // Stencil operations to increment for back faces and decrement for front faces (with wrapping in both cases).
-
+        depthStencil.stencilTestEnable = VK_TRUE;
         // --- Front Face Stencil Operations ---
         // Configure rules for polygons facing the camera.
         depthStencil.front.failOp      = VK_STENCIL_OP_KEEP;
@@ -228,6 +253,7 @@ void Voxelization::createPipeline(Configuration& cfg)
             throw std::runtime_error("failed to create pipeline!");
         }
         vkDestroyShaderModule(g_ctx.vk.device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(g_ctx.vk.device, geomShaderModule, nullptr);
         vkDestroyShaderModule(g_ctx.vk.device, fragShaderModule, nullptr);
     }
 

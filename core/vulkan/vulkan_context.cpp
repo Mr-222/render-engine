@@ -243,7 +243,6 @@ void Context::createLogicalDeviceAndQueue()
     assert(descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind);
     assert(descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
     assert(descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind);
-    assert(multiviewFeatures.multiview);
 
     VkDeviceCreateInfo createInfo {};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
