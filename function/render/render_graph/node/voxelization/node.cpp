@@ -1,9 +1,10 @@
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include "./node.h"
 #include "core/filesystem/file.h"
 #include "core/vulkan/vulkan_util.h"
 #include "function/global_context.h"
 #include "function/render/render_graph/pipeline.hpp"
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 

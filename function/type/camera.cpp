@@ -1,14 +1,15 @@
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include "camera.h"
 #include "core/math/math.h"
 #include "core/tool/logger.h"
 #include "function/global_context.h"
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
-// windows.h has to be after after quaternion
+// windows.h has to be after quaternion
 #include "core/vulkan/vulkan_util.h"
 
 using namespace Vk;
