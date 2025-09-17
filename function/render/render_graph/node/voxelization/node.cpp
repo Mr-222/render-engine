@@ -192,14 +192,11 @@ void Voxelization::createPipeline(Configuration& cfg)
 
         JSON_GET(RenderGraphConfiguration, rg_cfg, cfg, "render_graph");
         auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.vert.spv");
-        auto geomShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.geom.spv");
         auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.frag.spv");
         auto vertShaderModule  = createShaderModule(g_ctx.vk, vertShaderCode);
-        auto geomShaderModule  = createShaderModule(g_ctx.vk, geomShaderCode);
         auto fragShaderModule  = createShaderModule(g_ctx.vk, fragShaderCode);
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
             Pipeline<Param>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
-            Pipeline<Param>::shaderStageDefault(geomShaderModule, VK_SHADER_STAGE_GEOMETRY_BIT),
             Pipeline<Param>::shaderStageDefault(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT),
         };
         VkPipelineColorBlendStateCreateInfo colorBlending {};
@@ -254,7 +251,6 @@ void Voxelization::createPipeline(Configuration& cfg)
             throw std::runtime_error("failed to create pipeline!");
         }
         vkDestroyShaderModule(g_ctx.vk.device, vertShaderModule, nullptr);
-        vkDestroyShaderModule(g_ctx.vk.device, geomShaderModule, nullptr);
         vkDestroyShaderModule(g_ctx.vk.device, fragShaderModule, nullptr);
     }
 
@@ -316,7 +312,7 @@ void Voxelization::record(uint32_t swapchain_index)
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), 1, 0, 0, 0);
+        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(g_ctx.vk.commandBuffer);
