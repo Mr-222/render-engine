@@ -141,6 +141,14 @@ void Buffer::CopyTo(
     copyBuffer(ctx.commandBuffer, buffer, dst.buffer, size, srcOffset, dstOffset);
 }
 
+void Buffer::Clear(const Context &ctx) const {
+    clearBuffer(ctx.commandBuffer, buffer);
+}
+
+void Buffer::ClearSingleTime(const Context &ctx) const {
+    clearBufferSingleTime(ctx, buffer);
+}
+
 void Buffer::Delete(const Context& ctx, Buffer& b)
 {
     vkDestroyBuffer(ctx.device, b.buffer, nullptr);

@@ -30,6 +30,7 @@ layout(set = 2, binding = 0) uniform ObjectParam
     mat4 model;
     mat4 modelInvTrans;
     Handle material;
+    Handle vertBuf;
 }
 objectParam;
 

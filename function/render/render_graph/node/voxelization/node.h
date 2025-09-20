@@ -9,6 +9,7 @@ class Voxelization : public RenderGraphNode {
     };
 
     void createMatsBuffer();
+    void createVertPosBuffer();
     void createRenderPass();
     void createFramebuffer();
     void createPipeline(Configuration& cfg);
@@ -20,6 +21,9 @@ class Voxelization : public RenderGraphNode {
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
+
+    std::vector<Vk::Buffer> vert_pos_buffers;
+
     glm::mat4 view_mat;
     Vk::Buffer view_mat_buffer;
     std::array<glm::mat4, VOXEL_GRID_SIZE> proj_mats;

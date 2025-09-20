@@ -15,13 +15,11 @@ struct Object : public Resource {
         glm::mat4 model;
         glm::mat4 modelInvTrans;
         Vk::DescriptorHandle material;
+        Vk::DescriptorHandle vertBuf;
     };
 
     std::string name;
-    uuid::UUID uuid;
-
     std::string mesh;
-
     Transform transform;
 
     Param param;

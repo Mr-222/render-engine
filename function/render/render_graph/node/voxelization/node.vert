@@ -18,6 +18,11 @@ layout (set = 0, binding = BindlessStorageBinding) readonly buffer VoxelizationP
 }
 voxelizationProjs[];
 
+layout (set = 0, binding = BindlessStorageBinding) buffer VertexPosWorld {
+    vec4[] position;
+}
+vertexPosWorld[];
+
 layout (set = 1, binding = 0) uniform VoxelizationPipelineParam
 {
     Handle voxelizationViewMat;
@@ -30,6 +35,7 @@ layout(set = 2, binding = 0) uniform ObjectParam
     mat4 model;
     mat4 modelInvTrans;
     Handle material;
+    Handle vertBuf;
 }
 objectParam;
 
@@ -37,6 +43,7 @@ layout(location = 0) in vec3 inPosition;
 
 #define GetView voxelizationView[pipelineParam.voxelizationViewMat]
 #define GetProjs voxelizationProjs[pipelineParam.voxelizationProjMats]
+#define GetVertexBuffer vertexPosWorld[objectParam.vertBuf]
 #define GetObject objectParam
 
 void main()
@@ -44,8 +51,11 @@ void main()
     int layer = gl_InstanceIndex;
     gl_Layer = layer;
 
+    vec4 position_w = GetObject.model * vec4(inPosition, 1.0);
+    GetVertexBuffer.position[gl_VertexIndex] = position_w;
+
     mat4 view = GetView.view;
     mat4 proj = GetProjs.proj[layer];
 
-    gl_Position = proj * view * GetObject.model * vec4(inPosition, 1.0);
+    gl_Position = proj * view * position_w;
 }

@@ -56,6 +56,13 @@ void copyBufferSingleTime(
     VkDeviceSize srcOffset = 0,
     VkDeviceSize dstOffset = 0);
 
+void clearBuffer(
+    VkCommandBuffer commandBuffer,
+    VkBuffer buffer);
+void clearBufferSingleTime(
+    const Context& ctx,
+    VkBuffer buffer);
+
 VkDeviceSize createImage(
     const Context& ctx,
     const VkExtent3D& extent,

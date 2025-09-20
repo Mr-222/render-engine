@@ -48,6 +48,9 @@ struct Buffer {
         uint32_t mipLevel           = 0,
         size_t srcOffset            = 0,
         const VkOffset3D& dstOffset = { 0, 0, 0 }) const;
+    void Clear(const Context& ctx) const;
+    // No need to submit command buffer
+    void ClearSingleTime(const Context& ctx) const;
 
     uuid::UUID id = uuid::nil_uuid();
     VkBuffer buffer;

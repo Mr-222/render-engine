@@ -37,6 +37,7 @@ void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
 {
     this->attachments = &attachments;
     createMatsBuffer();
+    createVertPosBuffer();
     createRenderPass();
     createFramebuffer();
     createPipeline(cfg);
@@ -45,7 +46,7 @@ void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
 void Voxelization::createMatsBuffer()
 {
     view_mat = glm::lookAt(
-        glm::vec3(0.0f, 5.0f, 0.0f),
+        glm::vec3(0.0f, 3.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, -1.0f)
     );
@@ -61,7 +62,7 @@ void Voxelization::createMatsBuffer()
 
     // Near plane matches the depth of the current slice
     for (int i = 1; i <= VOXEL_GRID_SIZE; ++i) {
-        constexpr float left = -5.f, right = 5.f, bottom = -5.f, top = 5.f, farPlane = 20.f;
+        constexpr float left = -2.f, right = 2.f, bottom = -2.f, top = 2.f, farPlane = 6.f;
         constexpr float step = 10.f / VOXEL_GRID_SIZE;
         proj_mats[i - 1] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step, farPlane);
         proj_mats[i - 1][1][1] *= -1;
@@ -75,6 +76,26 @@ void Voxelization::createMatsBuffer()
     );
     proj_mats_buffer.Update(g_ctx.vk, proj_mats.data(), sizeof(proj_mats));
     g_ctx.dm.registerResource(proj_mats_buffer, DescriptorType::Storage);
+}
+
+void Voxelization::createVertPosBuffer()
+{
+    for (auto& obj : g_ctx.rm->objects) {
+        const auto& mesh = g_ctx.rm->meshes[obj.mesh];
+        if (!mesh.isWaterTight)
+            continue;
+
+        Buffer buffer = Buffer::New(
+                            g_ctx.vk,
+                        sizeof(glm::vec4) * mesh.data.vertices.size(),
+                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            false
+                        );
+        buffer.ClearSingleTime(g_ctx.vk);
+        obj.param.vertBuf = g_ctx.dm.registerResource(buffer, DescriptorType::Storage);
+        vert_pos_buffers.push_back(buffer);
+    }
 }
 
 void Voxelization::createRenderPass()
@@ -310,6 +331,8 @@ void Voxelization::record(uint32_t swapchain_index)
     for (const auto& obj : g_ctx.rm->objects) {
         bindDescriptorSet(2, pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         const auto& mesh = g_ctx.rm->meshes[obj.mesh];
+        if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh
+            continue;
 
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
@@ -334,4 +357,6 @@ void Voxelization::destroy()
     }
     Buffer::Delete(g_ctx.vk, view_mat_buffer);
     Buffer::Delete(g_ctx.vk, proj_mats_buffer);
+    for (Buffer& buffer : vert_pos_buffers)
+        Buffer::Delete(g_ctx.vk, buffer);
 }

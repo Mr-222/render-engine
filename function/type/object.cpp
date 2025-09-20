@@ -16,7 +16,6 @@ Object Object::fromConfiguration(ObjectConfiguration& config)
 {
     Object obj;
     obj.name = config.name;
-    obj.uuid = uuid::newUUID();
     obj.mesh = config.mesh;
 
     obj.transform = Transform(

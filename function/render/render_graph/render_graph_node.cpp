@@ -18,8 +18,8 @@ VkRenderPass RenderGraphNode::DefaultRenderPass(
             {
                 .format         = attachment_descriptions[d.name].format,
                 .samples        = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp         = d.load_op,
-                .storeOp        = d.store_op,
+                .loadOp         = isStencilAttachment ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : d.load_op,
+                .storeOp        = isStencilAttachment ? VK_ATTACHMENT_STORE_OP_DONT_CARE : d.store_op,
                 .stencilLoadOp  = isStencilAttachment ? d.load_op : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                 .stencilStoreOp = isStencilAttachment ? d.store_op : VK_ATTACHMENT_STORE_OP_DONT_CARE,
                 .initialLayout  = attachment_descriptions[d.name].layout,

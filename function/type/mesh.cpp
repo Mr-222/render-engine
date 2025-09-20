@@ -71,6 +71,7 @@ void Mesh::initBuffersFromData()
 Mesh Mesh::fileMesh(MeshConfiguration& config)
 {
     Mesh mesh;
+    mesh.isWaterTight = true;
 
     std::string inputfile = config.at("path").get<std::string>();
 
@@ -124,6 +125,7 @@ Mesh Mesh::sphereMesh(MeshConfiguration& config)
     auto [vertices, indices] = GeometryGenerator::sphere(pos, radius, tessellation);
     mesh.data.vertices       = std::move(vertices);
     mesh.data.indices        = std::move(indices);
+    mesh.isWaterTight        = true;
     // mesh.calculateTangents();
 
     mesh.initBuffersFromData();
@@ -140,6 +142,7 @@ Mesh Mesh::cubeMesh(MeshConfiguration& config)
     auto [vertices, indices] = GeometryGenerator::cube(pos, scale);
     mesh.data.vertices       = std::move(vertices);
     mesh.data.indices        = std::move(indices);
+    mesh.isWaterTight        = true;
     mesh.calculateTangents();
 
     mesh.initBuffersFromData();
@@ -157,6 +160,7 @@ Mesh Mesh::planeMesh(MeshConfiguration& config)
     auto [vertices, indices] = GeometryGenerator::plane(pos, normal, size);
     mesh.data.vertices       = std::move(vertices);
     mesh.data.indices        = std::move(indices);
+    mesh.isWaterTight        = false;
     mesh.calculateTangents();
 
     mesh.initBuffersFromData();
@@ -167,6 +171,7 @@ Mesh Mesh::planeMesh(MeshConfiguration& config)
 Mesh Mesh::objMesh(MeshConfiguration& config)
 {
     Mesh mesh;
+    mesh.isWaterTight = true;
 
     std::string inputfile = config.at("path").get<std::string>();
     tinyobj::ObjReaderConfig reader_config;

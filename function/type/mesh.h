@@ -16,6 +16,7 @@ struct Mesh {
     MeshData data;
     Vk::Buffer vertexBuffer;
     Vk::Buffer indexBuffer;
+    bool isWaterTight;
 
     static Mesh fromConfiguration(MeshConfiguration& config);
     void calculateTangents();

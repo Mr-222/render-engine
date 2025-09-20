@@ -269,6 +269,20 @@ void copyBuffer(
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 }
 
+void clearBuffer(
+    VkCommandBuffer commandBuffer, VkBuffer buffer)
+{
+    vkCmdFillBuffer(commandBuffer, buffer, 0, VK_WHOLE_SIZE, 0);
+}
+
+void clearBufferSingleTime(
+    const Context &ctx, VkBuffer buffer)
+{
+    singleTimeCommands(ctx, [&](const VkCommandBuffer& commandBuffer) {
+        clearBuffer(commandBuffer, buffer);
+    });
+}
+
 struct LayoutDependency {
     LayoutDependency(uint32_t access, uint32_t stage)
         : access(static_cast<VkAccessFlagBits>(access))
