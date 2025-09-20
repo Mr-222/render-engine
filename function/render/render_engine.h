@@ -32,6 +32,7 @@ private:
 
     void initGLFW();
     void initRenderGraph(std::function<void(VkCommandBuffer)> fn, std::unique_ptr<RenderGraph> custom_render_graph = nullptr);
+    void update() const;
     void draw();
     void onResize();
 

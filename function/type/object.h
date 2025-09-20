@@ -4,6 +4,7 @@
 #include "core/vulkan/descriptor_manager.h"
 #include "core/vulkan/type/buffer.h"
 #include "function/resource_manager/resource.h"
+#include "function/type/transform.h"
 
 #ifdef _WIN64
 #include <Windows.h>
@@ -11,6 +12,8 @@
 
 struct Object : public Resource {
     struct Param {
+        glm::mat4 model;
+        glm::mat4 modelInvTrans;
         Vk::DescriptorHandle material;
     };
 
@@ -18,6 +21,9 @@ struct Object : public Resource {
     uuid::UUID uuid;
 
     std::string mesh;
+
+    Transform transform;
+
     Param param;
     Vk::Buffer paramBuffer;
 
@@ -26,6 +32,7 @@ struct Object : public Resource {
 #else
     int getVkVertexMemHandle();
 #endif
+    void updatePosition(float delta_time);
     virtual std::string type() const override { return "Object"; }
     virtual void destroy() override;
     static Object fromConfiguration(ObjectConfiguration& config);

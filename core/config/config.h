@@ -32,6 +32,11 @@ struct ObjectConfiguration {
     std::string name;
     std::string mesh;
     std::string material;
+
+    std::array<float, 3> initial_position;
+    std::array<float, 3> initial_rotation; // euler angles in degrees
+    std::array<float, 3> initial_scale;
+    std::array<float, 3> angular_velocity; // degrees per second
 };
 
 struct LightConfiguration {
@@ -178,7 +183,11 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     ObjectConfiguration,
     name,
     mesh,
-    material);
+    material,
+    initial_position,
+    initial_rotation,
+    initial_scale,
+    angular_velocity);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     LightConfiguration,

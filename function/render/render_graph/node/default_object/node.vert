@@ -25,6 +25,14 @@ layout(set = 1, binding = 0) uniform PipelineParam
 }
 pipelineParam;
 
+layout(set = 2, binding = 0) uniform ObjectParam
+{
+    mat4 model;
+    mat4 modelInvTrans;
+    Handle material;
+}
+objectParam;
+
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
@@ -36,12 +44,13 @@ layout(location = 2) out vec2 uv;
 layout(location = 3) out vec3 tangent_w;
 
 #define GetCamera camera[pipelineParam.camera]
+#define GetObject objectParam
 
 void main()
 {
-    gl_Position = GetCamera.proj * GetCamera.view * vec4(inPosition, 1.0);
-    position_w = inPosition;
-    normal_w = inNormal;
+    gl_Position = GetCamera.proj * GetCamera.view * GetObject.model * vec4(inPosition, 1.0);
+    position_w = (GetObject.model * vec4(inPosition, 1.0)).xyz;
+    normal_w = normalize(mat3(GetObject.modelInvTrans) * inNormal);
     uv = inUV;
-    tangent_w = inTangent;
+    tangent_w = normalize(mat3(GetObject.model) * inTangent);
 }

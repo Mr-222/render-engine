@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #ifdef _WIN64
+#define NOMINMAX
 #include <windows.h>
 #endif
 

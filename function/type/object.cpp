@@ -3,6 +3,7 @@
 #include "core/vulkan/vulkan_util.h"
 #include "function/global_context.h"
 #include "function/resource_manager/resource_manager.h"
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace Vk;
 
@@ -18,7 +19,15 @@ Object Object::fromConfiguration(ObjectConfiguration& config)
     obj.uuid = uuid::newUUID();
     obj.mesh = config.mesh;
 
+    obj.transform = Transform(
+        glm::make_vec3(config.initial_position.data()),
+        glm::make_vec3(config.initial_rotation.data()),
+        glm::make_vec3(config.initial_scale.data()),
+        glm::make_vec3(config.angular_velocity.data())
+    );
+
     obj.param.material = g_ctx.dm.getResourceHandle(g_ctx.rm->materials[config.material].buffer.id);
+    obj.param.model    = obj.transform.get_matrix();
     obj.paramBuffer    = Buffer::New(
         g_ctx.vk,
         sizeof(Param),
@@ -56,3 +65,12 @@ int Object::getVkVertexMemHandle()
     return fd;
 }
 #endif
+
+void Object::updatePosition(float delta_time)
+{
+    transform.update(delta_time);
+
+    param.model = transform.get_matrix();
+    param.modelInvTrans = glm::transpose(glm::inverse(param.model));
+    paramBuffer.Update(g_ctx.vk, &param, sizeof(Param));
+}

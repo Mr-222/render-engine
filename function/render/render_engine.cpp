@@ -5,6 +5,7 @@
 #include "function/global_context.h"
 #include "function/render/render_graph/graph/graph.h"
 #include "function/resource_manager/resource_manager.h"
+#include "function/type/transform.h"
 #include <GLFW/glfw3.h>
 
 using namespace Vk;
@@ -56,10 +57,17 @@ void RenderEngine::initRenderGraph(std::function<void(VkCommandBuffer)> fn, std:
 
 void RenderEngine::render()
 {
+    update();
     draw();
 
     auto name = base_window_name + " " + std::to_string(g_ctx->frame_time * 1000) + "ms";
     glfwSetWindowTitle(window, name.c_str());
+}
+
+void RenderEngine::update() const {
+    for (auto& obj : g_ctx->rm->objects) {
+        obj.updatePosition(g_ctx->frame_time);
+    }
 }
 
 void RenderEngine::draw()

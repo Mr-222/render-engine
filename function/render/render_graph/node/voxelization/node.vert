@@ -25,10 +25,19 @@ layout (set = 1, binding = 0) uniform VoxelizationPipelineParam
 }
 pipelineParam;
 
+layout(set = 2, binding = 0) uniform ObjectParam
+{
+    mat4 model;
+    mat4 modelInvTrans;
+    Handle material;
+}
+objectParam;
+
 layout(location = 0) in vec3 inPosition;
 
 #define GetView voxelizationView[pipelineParam.voxelizationViewMat]
 #define GetProjs voxelizationProjs[pipelineParam.voxelizationProjMats]
+#define GetObject objectParam
 
 void main()
 {
@@ -38,5 +47,5 @@ void main()
     mat4 view = GetView.view;
     mat4 proj = GetProjs.proj[layer];
 
-    gl_Position = proj * view * vec4(inPosition, 1.0);
+    gl_Position = proj * view * GetObject.model * vec4(inPosition, 1.0);
 }

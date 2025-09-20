@@ -122,6 +122,7 @@ void Voxelization::createPipeline(Configuration& cfg)
         std::vector<VkDescriptorSetLayout> descLayouts = {
             g_ctx.dm.BINDLESS_LAYOUT(),
             g_ctx.dm.PARAMETER_LAYOUT(),
+            g_ctx.dm.PARAMETER_LAYOUT(),
         };
         pipeline.initLayout(descLayouts);
     }
@@ -307,6 +308,7 @@ void Voxelization::record(uint32_t swapchain_index)
     bindDescriptorSet(1, pipeline.layout, g_ctx.dm.getParameterSet(pipeline.param_buf.id));
 
     for (const auto& obj : g_ctx.rm->objects) {
+        bindDescriptorSet(2, pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         const auto& mesh = g_ctx.rm->meshes[obj.mesh];
 
         VkDeviceSize offsets[] = { 0 };
