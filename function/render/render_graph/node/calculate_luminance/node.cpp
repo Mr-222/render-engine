@@ -19,6 +19,7 @@ CalculateLuminance::CalculateLuminance(
             "sdr",
             {
                 sdr_buf,
+                0,
                 RenderAttachmentType::Color | RenderAttachmentType::Sampler,
                 RenderAttachmentRW::Read,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -32,6 +33,7 @@ CalculateLuminance::CalculateLuminance(
             "sdr_alpha_illuminance",
             RenderAttachmentDescription {
                 sdr_buf_alpha_illuminance,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,

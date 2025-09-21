@@ -21,6 +21,7 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_buf
             "voxel",
             {
                 voxel_buf_name,
+                0,
                 RenderAttachmentType::Stencil | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -103,15 +104,18 @@ void Voxelization::createRenderPass()
     std::vector<AttachmentDescriptionHelper> helpers = {
         {"voxel", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE },
     };
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass          = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass          = 0;
-    dependency.srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependency.dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    render_pass = DefaultRenderPass(attachment_descriptions, helpers, dependency);
+    std::vector<VkSubpassDependency> dependencies = {
+        { VK_SUBPASS_EXTERNAL,
+            0,
+            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+        }
+    };
+
+    render_pass = MultiSubpassRenderPass(attachment_descriptions, helpers, dependencies);
 }
 
 void Voxelization::createFramebuffer()

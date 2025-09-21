@@ -13,7 +13,7 @@ struct RenderAttachmentDescription {
     static constexpr std::string SWAPCHAIN_IMAGE_NAME() { return "swapchain"; }
 
     std::string name;
-
+    uint32_t subpass;
     RenderAttachmentType type;
     RenderAttachmentRW rw;
     VkImageLayout layout;

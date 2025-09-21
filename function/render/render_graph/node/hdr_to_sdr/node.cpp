@@ -15,6 +15,7 @@ HDRToSDR::HDRToSDR(const std::string& name, const std::string& hdr_buf, const st
             "hdr",
             {
                 hdr_buf,
+                0,
                 RenderAttachmentType::Color | RenderAttachmentType::Sampler,
                 RenderAttachmentRW::Read,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -28,6 +29,7 @@ HDRToSDR::HDRToSDR(const std::string& name, const std::string& hdr_buf, const st
             "sdr",
             RenderAttachmentDescription {
                 sdr_buf,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,

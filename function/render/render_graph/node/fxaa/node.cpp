@@ -20,6 +20,7 @@ FXAANode::FXAANode(
             "original",
             {
                 original,
+                0,
                 RenderAttachmentType::Color | RenderAttachmentType::Sampler,
                 RenderAttachmentRW::Read,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -33,6 +34,7 @@ FXAANode::FXAANode(
             "antialiased",
             RenderAttachmentDescription {
                 antialiased,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,

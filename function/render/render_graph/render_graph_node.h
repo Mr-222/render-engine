@@ -14,9 +14,13 @@ protected:
         VkAttachmentStoreOp store_op;
     };
     static VkRenderPass DefaultRenderPass(
-        std::unordered_map<std::string, RenderAttachmentDescription>& attachment_descriptions,
+        const std::unordered_map<std::string, RenderAttachmentDescription>& attachment_descriptions,
         const std::vector<AttachmentDescriptionHelper>& desc,
-        VkSubpassDependency& dependency);
+        const VkSubpassDependency& dependency);
+    static VkRenderPass MultiSubpassRenderPass(
+        const std::unordered_map<std::string, RenderAttachmentDescription>& attachment_info_map,
+        const std::vector<AttachmentDescriptionHelper>& attachment_configs,
+        const std::vector<VkSubpassDependency>& dependencies);
     void bindDescriptorSet(uint32_t index, VkPipelineLayout layout, VkDescriptorSet* set);
     void setDefaultViewportAndScissor();
     Vk::Image* getAttachmentByName(const std::string& name, RenderAttachments* attachments, int swapchain_index);

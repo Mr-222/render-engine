@@ -14,6 +14,7 @@ Record::Record(const std::string& name, const std::string& color_buf_name)
             "color",
             {
                 is_swapchain ? RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME() : color_buf_name,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Read,
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

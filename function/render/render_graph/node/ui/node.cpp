@@ -13,6 +13,7 @@ UI::UI(const std::string& name, const std::string& color_buf_name, std::function
             "color",
             {
                 is_swapchain ? RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME() : color_buf_name,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,

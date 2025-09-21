@@ -16,6 +16,7 @@ FireObject::FireObject(const std::string& name, const std::string& color_buf_nam
             "color",
             {
                 color_buf_name,
+                0,
                 RenderAttachmentType::Color,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -29,6 +30,7 @@ FireObject::FireObject(const std::string& name, const std::string& color_buf_nam
             "depth",
             RenderAttachmentDescription {
                 depth_buf_name,
+                0,
                 RenderAttachmentType::Depth,
                 RenderAttachmentRW::Read | RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
