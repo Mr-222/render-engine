@@ -17,6 +17,17 @@ protected:
         const std::unordered_map<std::string, RenderAttachmentDescription>& attachment_descriptions,
         const std::vector<AttachmentDescriptionHelper>& desc,
         const VkSubpassDependency& dependency);
+    /**
+     * @brief Creates a VkRenderPass with support for multiple subpasses.
+     *
+     * @param attachment_info_map A map from an attachment's name to its full description.
+     * @param attachment_configs A list of attachments to be included in this render pass.
+     * **Crucially, the order of attachments in this vector must exactly match the
+     * order of VkImageViews that will be provided when creating the compatible VkFramebuffer.**
+     * @param dependencies A vector of subpass dependencies that define execution and memory
+     * barriers between the subpasses.
+     * @return A handle to the created VkRenderPass.
+    */
     static VkRenderPass MultiSubpassRenderPass(
         const std::unordered_map<std::string, RenderAttachmentDescription>& attachment_info_map,
         const std::vector<AttachmentDescriptionHelper>& attachment_configs,
