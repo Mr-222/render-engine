@@ -52,8 +52,6 @@ void main()
     gl_Layer = layer;
 
     vec4 position_w = GetObject.model * vec4(inPosition, 1.0);
-    GetVertexBuffer.position[gl_VertexIndex] = position_w;
-
     mat4 view = GetView.view;
     mat4 proj = GetProjs.proj[layer];
 

@@ -95,14 +95,18 @@ VkRenderPass RenderGraphNode::MultiSubpassRenderPass(
         });
     }
 
+    uint32_t max_subpass_idx = 0;
     uint32_t subpass_count = 0;
+    // subpass count is the max(dependency's dstSubpass, attachment's subpass) + 1
     if (!attachment_configs.empty()) {
-        uint32_t max_subpass_idx = 0;
         for (const auto& config : attachment_configs) {
             max_subpass_idx = std::max(max_subpass_idx, attachment_info_map.at(config.name).subpass);
         }
-        subpass_count = max_subpass_idx + 1;
     }
+    for (const auto& dependency : dependencies) {
+        max_subpass_idx = std::max(max_subpass_idx, dependency.dstSubpass);
+    }
+    subpass_count = max_subpass_idx + 1;
 
     // Group attachment references by subpass
     std::vector<std::vector<VkAttachmentReference>> subpass_color_refs(subpass_count);

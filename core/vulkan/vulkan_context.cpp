@@ -5,6 +5,7 @@
 #include "core/vulkan/vulkan_util.h"
 #include <GLFW/glfw3.h>
 #include <set>
+#include <cuda/std/__algorithm/transform.h>
 #ifdef _WIN64
 #include <dxgi1_2.h>
 #endif
@@ -158,8 +159,12 @@ bool Context::isDeviceSuitable(VkPhysicalDevice device)
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
+    VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeature =  {};
+    transformFeedbackFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
+
     VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &transformFeedbackFeature;
 
     vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
 
@@ -178,6 +183,7 @@ bool Context::isDeviceSuitable(VkPhysicalDevice device)
     return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
         && deviceFeatures2.features.geometryShader
         && deviceFeatures2.features.samplerAnisotropy
+        && transformFeedbackFeature.transformFeedback
         && indices.isComplete()
         && extensionsSupported
         && swapChainAdequate;
@@ -220,9 +226,13 @@ void Context::createLogicalDeviceAndQueue()
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
+    VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures {};
+    transformFeedbackFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
+    transformFeedbackFeatures.pNext = nullptr;
+
     VkPhysicalDeviceVulkan12Features device12Features {};
     device12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    device12Features.pNext = nullptr;
+    device12Features.pNext = &transformFeedbackFeatures;
 
     VkPhysicalDeviceFeatures2 deviceFeatures {};
     deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -236,6 +246,7 @@ void Context::createLogicalDeviceAndQueue()
     assert(device12Features.descriptorBindingUniformBufferUpdateAfterBind);
     assert(device12Features.shaderStorageBufferArrayNonUniformIndexing);
     assert(device12Features.descriptorBindingStorageBufferUpdateAfterBind);
+    assert(transformFeedbackFeatures.transformFeedback);
 
     VkDeviceCreateInfo createInfo {};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

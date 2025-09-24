@@ -7,17 +7,24 @@ class Voxelization : public RenderGraphNode {
         Vk::DescriptorHandle voxelizationViewMat;
         Vk::DescriptorHandle voxelizationProjMats;
     };
+    struct Foo {};
+
+    VkPipelineVertexInputStateCreateInfo getVertexInputeState();
+    VkPipelineRasterizationStateCreateInfo getRasterizationState(bool rasterize);
+    VkPipelineViewportStateCreateInfo getViewportState();
 
     void createMatsBuffer();
     void createVertPosBuffer();
     void createRenderPass();
     void createFramebuffer();
-    void createPipeline(Configuration& cfg);
+    void createVoxelizationPipeline(Configuration& cfg);
+    void createVertexPosPipeline(Configuration& cfg);
     void setViewportAndScissor();
 
     static constexpr uint32_t VOXEL_GRID_SIZE = 128;
 
-    Pipeline<Param> pipeline;
+    Pipeline<Param> voxelPipeline;
+    Pipeline<Foo>   vertexPosPipeline;
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
