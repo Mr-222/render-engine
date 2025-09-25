@@ -23,8 +23,8 @@ class Voxelization : public RenderGraphNode {
 
     static constexpr uint32_t VOXEL_GRID_SIZE = 128;
 
-    Pipeline<Param> voxelPipeline;
-    Pipeline<Foo>   vertexPosPipeline;
+    Pipeline<Param> voxel_pipeline;
+    Pipeline<Foo> vertex_pos_pipeline;
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;

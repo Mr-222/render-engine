@@ -219,7 +219,7 @@ void Voxelization::createVoxelizationPipeline(Configuration& cfg)
             g_ctx.dm.PARAMETER_LAYOUT(),
             g_ctx.dm.PARAMETER_LAYOUT(),
         };
-        voxelPipeline.initLayout(descLayouts);
+        voxel_pipeline.initLayout(descLayouts);
     }
 
     {
@@ -284,10 +284,10 @@ void Voxelization::createVoxelizationPipeline(Configuration& cfg)
         pipelineInfo.pMultisampleState   = &multisample;
         pipelineInfo.pColorBlendState    = &colorBlending;
         pipelineInfo.pDynamicState       = &dynamicState;
-        pipelineInfo.layout              = voxelPipeline.layout;
+        pipelineInfo.layout              = voxel_pipeline.layout;
         pipelineInfo.renderPass          = render_pass;
         pipelineInfo.subpass             = 0;
-        if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &voxelPipeline.pipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &voxel_pipeline.pipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create voxelization pipeline!");
         }
         vkDestroyShaderModule(g_ctx.vk.device, vertShaderModule, nullptr);
@@ -295,17 +295,17 @@ void Voxelization::createVoxelizationPipeline(Configuration& cfg)
     }
 
     {
-        voxelPipeline.param.voxelizationViewMat  = g_ctx.dm.getResourceHandle(view_mat_buffer.id);
-        voxelPipeline.param.voxelizationProjMats = g_ctx.dm.getResourceHandle(proj_mats_buffer.id);
-        voxelPipeline.param_buf                  = Buffer::New(
+        voxel_pipeline.param.voxelizationViewMat  = g_ctx.dm.getResourceHandle(view_mat_buffer.id);
+        voxel_pipeline.param.voxelizationProjMats = g_ctx.dm.getResourceHandle(proj_mats_buffer.id);
+        voxel_pipeline.param_buf                  = Buffer::New(
             g_ctx.vk,
             sizeof(Param),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true
         );
-        voxelPipeline.param_buf.Update(g_ctx.vk, &voxelPipeline.param, sizeof(Param));
-        g_ctx.dm.registerParameter(voxelPipeline.param_buf);
+        voxel_pipeline.param_buf.Update(g_ctx.vk, &voxel_pipeline.param, sizeof(Param));
+        g_ctx.dm.registerParameter(voxel_pipeline.param_buf);
     }
 }
 
@@ -315,7 +315,7 @@ void Voxelization::createVertexPosPipeline(Configuration &cfg)
         std::vector<VkDescriptorSetLayout> descLayouts = {
             g_ctx.dm.PARAMETER_LAYOUT(),
         };
-        vertexPosPipeline.initLayout(descLayouts);
+        vertex_pos_pipeline.initLayout(descLayouts);
     }
 
     {
@@ -356,10 +356,10 @@ void Voxelization::createVertexPosPipeline(Configuration &cfg)
         pipelineInfo.pMultisampleState   = &multisample;
         pipelineInfo.pColorBlendState    = &colorBlending;
         pipelineInfo.pDynamicState       = &dynamicState;
-        pipelineInfo.layout              = vertexPosPipeline.layout;
+        pipelineInfo.layout              = vertex_pos_pipeline.layout;
         pipelineInfo.renderPass          = render_pass;
         pipelineInfo.subpass             = 1;
-        if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vertexPosPipeline.pipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vertex_pos_pipeline.pipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create vertices position feedback pipeline!");
         }
         vkDestroyShaderModule(g_ctx.vk.device, vertShaderModule, nullptr);
@@ -400,9 +400,9 @@ void Voxelization::record(uint32_t swapchain_index)
     vkCmdBeginRenderPass(g_ctx.vk.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     // Subpass 0, mesh voxelization
-    vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, voxelPipeline.pipeline);
-    bindDescriptorSet(0, voxelPipeline.layout, g_ctx.dm.BINDLESS_SET());
-    bindDescriptorSet(1, voxelPipeline.layout, g_ctx.dm.getParameterSet(voxelPipeline.param_buf.id));
+    vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, voxel_pipeline.pipeline);
+    bindDescriptorSet(0, voxel_pipeline.layout, g_ctx.dm.BINDLESS_SET());
+    bindDescriptorSet(1, voxel_pipeline.layout, g_ctx.dm.getParameterSet(voxel_pipeline.param_buf.id));
 
     for (int i = 0; i < g_ctx.rm->objects.size(); ++i) {
         const Object& obj = g_ctx.rm->objects[i];
@@ -410,7 +410,7 @@ void Voxelization::record(uint32_t swapchain_index)
         if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
             continue;
 
-        bindDescriptorSet(2, voxelPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
+        bindDescriptorSet(2, voxel_pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -424,14 +424,14 @@ void Voxelization::record(uint32_t swapchain_index)
     // CPU side instead. However, the bottleneck is in the simulation side so we can keep the current
     // design to achieve minimum modifications of the render engine for implementing voxelization.
     vkCmdNextSubpass(g_ctx.vk.commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vertexPosPipeline.pipeline);
+    vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vertex_pos_pipeline.pipeline);
 
     for (const auto& obj : g_ctx.rm->objects) {
         const auto& mesh = g_ctx.rm->meshes[obj.mesh];
         if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
             continue;
 
-        bindDescriptorSet(0, vertexPosPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
+        bindDescriptorSet(0, vertex_pos_pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         constexpr VkDeviceSize offsets[] = { 0 };
         Vk::vkCmdBindTransformFeedbackBuffersEXT(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[0].buffer, offsets, nullptr);
         Vk::vkCmdBeginTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
@@ -453,7 +453,7 @@ void Voxelization::onResize()
 
 void Voxelization::destroy()
 {
-    voxelPipeline.destroy();
+    voxel_pipeline.destroy();
     vkDestroyRenderPass(g_ctx.vk.device, render_pass, nullptr);
     for (auto& framebuffer : framebuffers) {
         vkDestroyFramebuffer(g_ctx.vk.device, framebuffer, nullptr);
