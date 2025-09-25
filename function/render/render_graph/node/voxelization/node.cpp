@@ -82,21 +82,23 @@ void Voxelization::createMatsBuffer()
 
 void Voxelization::createVertPosBuffer()
 {
-    for (auto& obj : g_ctx.rm->objects) {
-        const auto& mesh = g_ctx.rm->meshes[obj.mesh];
+    vert_pos_buffers.resize(g_ctx.rm->objects.size());
+    for (int i = 0; i < g_ctx.rm->objects.size(); ++i) {
+        Object& obj = g_ctx.rm->objects[i];
+        const Mesh& mesh = g_ctx.rm->meshes[obj.mesh];
         if (!mesh.isWaterTight)
             continue;
 
         Buffer buffer = Buffer::New(
-                            g_ctx.vk,
-                        sizeof(glm::vec4) * mesh.data.vertices.size(),
-                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            false
-                        );
+                    g_ctx.vk,
+                sizeof(glm::vec4) * mesh.data.vertices.size(),
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    false
+                );
         buffer.ClearSingleTime(g_ctx.vk);
         obj.param.vertBuf = g_ctx.dm.registerResource(buffer, DescriptorType::Storage);
-        vert_pos_buffers.push_back(buffer);
+        vert_pos_buffers[i] = buffer;
     }
 }
 
@@ -402,13 +404,14 @@ void Voxelization::record(uint32_t swapchain_index)
     bindDescriptorSet(0, voxelPipeline.layout, g_ctx.dm.BINDLESS_SET());
     bindDescriptorSet(1, voxelPipeline.layout, g_ctx.dm.getParameterSet(voxelPipeline.param_buf.id));
 
-    for (const auto& obj : g_ctx.rm->objects) {
-        bindDescriptorSet(2, voxelPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
-        const auto& mesh = g_ctx.rm->meshes[obj.mesh];
+    for (int i = 0; i < g_ctx.rm->objects.size(); ++i) {
+        const Object& obj = g_ctx.rm->objects[i];
+        const Mesh& mesh = g_ctx.rm->meshes[obj.mesh];
         if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
             continue;
 
-        VkDeviceSize offsets[] = { 0 };
+        bindDescriptorSet(2, voxelPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
+        constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
@@ -424,15 +427,20 @@ void Voxelization::record(uint32_t swapchain_index)
     vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vertexPosPipeline.pipeline);
 
     for (const auto& obj : g_ctx.rm->objects) {
-        bindDescriptorSet(0, vertexPosPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         const auto& mesh = g_ctx.rm->meshes[obj.mesh];
         if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
             continue;
 
-        VkDeviceSize offsets[] = { 0 };
+        bindDescriptorSet(0, vertexPosPipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
+        constexpr VkDeviceSize offsets[] = { 0 };
+        Vk::vkCmdBindTransformFeedbackBuffersEXT(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[0].buffer, offsets, nullptr);
+        Vk::vkCmdBeginTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
+
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), 1, 0, 0, 0);
+
+        Vk::vkCmdEndTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
     }
 
     vkCmdEndRenderPass(g_ctx.vk.commandBuffer);

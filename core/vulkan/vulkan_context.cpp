@@ -5,7 +5,6 @@
 #include "core/vulkan/vulkan_util.h"
 #include <GLFW/glfw3.h>
 #include <set>
-#include <cuda/std/__algorithm/transform.h>
 #ifdef _WIN64
 #include <dxgi1_2.h>
 #endif
@@ -264,6 +263,17 @@ void Context::createLogicalDeviceAndQueue()
     vkGetDeviceQueue(device, queueFamilyIndices.presentFamily.value(), 0, &presentQueue);
 }
 
+void Context::loadFunctions()
+{
+    vkCmdBeginTransformFeedbackEXT = reinterpret_cast<PFN_vkCmdBeginTransformFeedbackEXT>(vkGetDeviceProcAddr(device, "vkCmdBeginTransformFeedbackEXT"));
+    vkCmdEndTransformFeedbackEXT   = reinterpret_cast<PFN_vkCmdEndTransformFeedbackEXT>(vkGetDeviceProcAddr(device, "vkCmdEndTransformFeedbackEXT"));
+    vkCmdBindTransformFeedbackBuffersEXT = reinterpret_cast<PFN_vkCmdBindTransformFeedbackBuffersEXT>(vkGetDeviceProcAddr(device, "vkCmdBindTransformFeedbackBuffersEXT"));
+
+    if (!vkCmdBeginTransformFeedbackEXT || !vkCmdEndTransformFeedbackEXT || !vkCmdBindTransformFeedbackBuffersEXT) {
+        throw std::runtime_error("failed to load Vulkan extension functions.");
+    }
+}
+
 void Context::createSurface()
 {
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
@@ -426,6 +436,7 @@ void Context::initVulkan()
     pickPhysicalDevice();
     queueFamilyIndices = QueueFamilyIndices::findQueueFamilies(physicalDevice, surface);
     createLogicalDeviceAndQueue();
+    loadFunctions();
     createCommandPoolAndBuffer();
 
     createSwapChain();
