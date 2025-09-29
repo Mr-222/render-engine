@@ -63,11 +63,11 @@ void Voxelization::createMatsBuffer()
     g_ctx.dm.registerResource(view_mat_buffer, DescriptorType::Uniform);
 
     // Near plane matches the depth of the current slice
-    for (int i = 1; i <= VOXEL_GRID_SIZE; ++i) {
+    for (int i = 0; i < VOXEL_GRID_SIZE; ++i) {
         constexpr float left = -2.f, right = 2.f, bottom = -2.f, top = 2.f, farPlane = 6.f;
-        constexpr float step = 10.f / VOXEL_GRID_SIZE;
-        proj_mats[i - 1] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step, farPlane);
-        proj_mats[i - 1][1][1] *= -1;
+        constexpr float step = farPlane / VOXEL_GRID_SIZE;
+        proj_mats[i] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step, farPlane);
+        proj_mats[i][1][1] *= -1;
     }
     proj_mats_buffer = Buffer::New(
         g_ctx.vk,
