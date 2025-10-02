@@ -20,7 +20,7 @@ Object Object::fromConfiguration(ObjectConfiguration& config)
 
     obj.transform = Transform(
         glm::make_vec3(config.initial_position.data()),
-        glm::make_vec3(config.initial_rotation.data()),
+        glm::radians(glm::make_vec3(config.initial_rotation.data())),
         glm::make_vec3(config.initial_scale.data()),
         glm::make_vec3(config.angular_velocity.data())
     );

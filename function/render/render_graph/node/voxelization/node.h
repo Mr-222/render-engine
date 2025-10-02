@@ -3,13 +3,21 @@
 #include "function/render/render_graph/render_graph_node.h"
 
 class Voxelization : public RenderGraphNode {
-    struct Param {
+    struct VoxelParam {
         Vk::DescriptorHandle voxelizationViewMat;
         Vk::DescriptorHandle voxelizationProjMats;
     };
-    struct Foo {};
 
-    VkPipelineVertexInputStateCreateInfo getVertexInputeState();
+    struct VelocityParam {
+        glm::vec2 projSpacePixDim;
+        float deltaT;
+        Vk::DescriptorHandle voxelizationViewMat;
+        Vk::DescriptorHandle voxelizationProjMats;
+    };
+
+    struct EmptyParam {};
+
+    VkPipelineVertexInputStateCreateInfo getVertexInputState();
     VkPipelineRasterizationStateCreateInfo getRasterizationState(bool rasterize);
     VkPipelineViewportStateCreateInfo getViewportState();
 
@@ -18,13 +26,16 @@ class Voxelization : public RenderGraphNode {
     void createRenderPass();
     void createFramebuffer();
     void createVoxelizationPipeline(Configuration& cfg);
+    void createVelocityRecordPipeline(Configuration& cfg);
     void createVertexPosPipeline(Configuration& cfg);
     void setViewportAndScissor();
+    void updateTime();
 
-    static constexpr uint32_t VOXEL_GRID_SIZE = 128;
+    static constexpr uint32_t VOXEL_GRID_SIZE = 256;
 
-    Pipeline<Param> voxel_pipeline;
-    Pipeline<Foo> vertex_pos_pipeline;
+    Pipeline<VoxelParam> voxel_pipeline;
+    Pipeline<VelocityParam> velocity_pipeline;
+    Pipeline<EmptyParam> vertex_pos_pipeline;
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
@@ -39,7 +50,8 @@ class Voxelization : public RenderGraphNode {
 public:
     Voxelization(
         const std::string& name,
-        const std::string& voxel_buf_name);
+        const std::string& voxel_tex_name,
+        const std::string& velocity_tex_name);
 
     void init(Configuration& cfg, RenderAttachments& attachments) override;
     void record(uint32_t swapchain_index) override;

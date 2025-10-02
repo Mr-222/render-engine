@@ -1,6 +1,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include "./node.h"
+#include "core/tool/logger.h"
 #include "core/filesystem/file.h"
 #include "core/vulkan/vulkan_util.h"
 #include "function/global_context.h"
@@ -12,25 +13,39 @@
 
 using namespace Vk;
 
-Voxelization::Voxelization(const std::string& name, const std::string& voxel_buf_name)
+Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex_name, const std::string& velocity_tex_name)
     : RenderGraphNode(name)
 {
-    assert(voxel_buf_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
+    assert(voxel_tex_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
     attachment_descriptions = {
         {
             "voxel",
             {
-                voxel_buf_name,
+                voxel_tex_name,
                 0,
                 RenderAttachmentType::Stencil | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_FORMAT_S8_UINT,
                 { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
                 VOXEL_GRID_SIZE,
             },
-        }
+        },
+        {
+            "velocity",
+            {
+                velocity_tex_name,
+                1,
+                RenderAttachmentType::Color | RenderAttachmentType::DontRecreateOnResize,
+                RenderAttachmentRW::Write,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_FORMAT_R8G8B8A8_SNORM,
+                { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
+                VOXEL_GRID_SIZE,
+            }
+        },
     };
 }
 
@@ -42,6 +57,7 @@ void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
     createRenderPass();
     createFramebuffer();
     createVoxelizationPipeline(cfg);
+    createVelocityRecordPipeline(cfg);
     createVertexPosPipeline(cfg);
 }
 
@@ -106,19 +122,29 @@ void Voxelization::createRenderPass()
 {
     std::vector<AttachmentDescriptionHelper> helpers = {
         {"voxel", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE },
+        { "velocity", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE }
     };
 
     std::vector<VkSubpassDependency> dependencies = {
-        { VK_SUBPASS_EXTERNAL,
+        {
+            VK_SUBPASS_EXTERNAL,
             0,
             VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
         },
+    {
+        VK_SUBPASS_EXTERNAL,
+        1,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
+        VK_ACCESS_SHADER_READ_BIT
+        },
         {
-            0,
             1,
+            2,
             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
             VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
             VK_ACCESS_SHADER_READ_BIT,
@@ -133,8 +159,9 @@ void Voxelization::createFramebuffer()
 {
     framebuffers.resize(g_ctx.vk.swapChainImages.size());
     for (int i = 0; i < g_ctx.vk.swapChainImages.size(); ++i) {
-        std::array<VkImageView, 1> views = {
+        std::array<VkImageView, 2> views = {
             attachments->getAttachment(attachment_descriptions["voxel"].name).view,
+            attachments->getAttachment(attachment_descriptions["velocity"].name).view,
         };
 
         VkFramebufferCreateInfo framebufferInfo {};
@@ -152,7 +179,7 @@ void Voxelization::createFramebuffer()
     }
 }
 
-VkPipelineVertexInputStateCreateInfo Voxelization::getVertexInputeState()
+VkPipelineVertexInputStateCreateInfo Voxelization::getVertexInputState()
 {
     static VkVertexInputBindingDescription bindingDescription {};
     bindingDescription.binding   = 0;
@@ -193,14 +220,14 @@ VkPipelineViewportStateCreateInfo Voxelization::getViewportState()
     static VkViewport viewport {};
     viewport.x        = 0.0f;
     viewport.y        = 0.0f;
-    viewport.width    = static_cast<float>(Voxelization::VOXEL_GRID_SIZE);
-    viewport.height   = static_cast<float>(Voxelization::VOXEL_GRID_SIZE);
+    viewport.width    = static_cast<float>(VOXEL_GRID_SIZE);
+    viewport.height   = static_cast<float>(VOXEL_GRID_SIZE);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     static VkRect2D scissor {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { Voxelization::VOXEL_GRID_SIZE, Voxelization::VOXEL_GRID_SIZE };
+    scissor.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
 
     VkPipelineViewportStateCreateInfo viewportState {};
     viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -223,21 +250,21 @@ void Voxelization::createVoxelizationPipeline(Configuration& cfg)
     }
 
     {
-        auto vertexInput   = getVertexInputeState();
+        auto vertexInput   = getVertexInputState();
         DynamicStateDefault();
         auto viewportState = getViewportState();
-        auto inputAssembly = Pipeline<Param>::inputAssemblyDefault();
+        auto inputAssembly = Pipeline<VoxelParam>::inputAssemblyDefault();
         auto rasterization = getRasterizationState(true);
-        auto multisample   = Pipeline<Param>::multisampleDefault();
+        auto multisample   = Pipeline<VoxelParam>::multisampleDefault();
 
         JSON_GET(RenderGraphConfiguration, rg_cfg, cfg, "render_graph");
-        auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.vert.spv");
-        auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/node.frag.spv");
+        auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/voxelization.vert.spv");
+        auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/voxelization.frag.spv");
         auto vertShaderModule  = createShaderModule(g_ctx.vk, vertShaderCode);
         auto fragShaderModule  = createShaderModule(g_ctx.vk, fragShaderCode);
         std::vector shaderStages = {
-            Pipeline<Param>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
-            Pipeline<Param>::shaderStageDefault(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT),
+            Pipeline<VoxelParam>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
+            Pipeline<VoxelParam>::shaderStageDefault(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT),
         };
         VkPipelineColorBlendStateCreateInfo colorBlending {};
         colorBlending.sType            = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -299,13 +326,101 @@ void Voxelization::createVoxelizationPipeline(Configuration& cfg)
         voxel_pipeline.param.voxelizationProjMats = g_ctx.dm.getResourceHandle(proj_mats_buffer.id);
         voxel_pipeline.param_buf                  = Buffer::New(
             g_ctx.vk,
-            sizeof(Param),
+            sizeof(VoxelParam),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true
         );
-        voxel_pipeline.param_buf.Update(g_ctx.vk, &voxel_pipeline.param, sizeof(Param));
+        voxel_pipeline.param_buf.Update(g_ctx.vk, &voxel_pipeline.param, sizeof(VoxelParam));
         g_ctx.dm.registerParameter(voxel_pipeline.param_buf);
+    }
+}
+
+void Voxelization::createVelocityRecordPipeline(Configuration &cfg)
+{
+    {
+        std::vector<VkDescriptorSetLayout> descLayouts = {
+            g_ctx.dm.BINDLESS_LAYOUT(),
+            g_ctx.dm.PARAMETER_LAYOUT(),
+            g_ctx.dm.PARAMETER_LAYOUT()
+        };
+        velocity_pipeline.initLayout(descLayouts);
+    }
+
+    {
+        auto vertexInput   = getVertexInputState();
+        DynamicStateDefault();
+        auto viewportState = getViewportState();
+        auto inputAssembly = Pipeline<VelocityParam>::inputAssemblyDefault();
+        auto rasterization = getRasterizationState(true);
+        auto multisample   = Pipeline<VelocityParam>::multisampleDefault();
+
+        JSON_GET(RenderGraphConfiguration, rg_cfg, cfg, "render_graph");
+        auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/velocity.vert.spv");
+        auto geomShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/velocity.geom.spv");
+        auto fragShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/velocity.frag.spv");
+        auto vertShaderModule  = createShaderModule(g_ctx.vk, vertShaderCode);
+        auto geomShaderModule  = createShaderModule(g_ctx.vk, geomShaderCode);
+        auto fragShaderModule  = createShaderModule(g_ctx.vk, fragShaderCode);
+        std::vector shaderStages = {
+            Pipeline<VelocityParam>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
+            Pipeline<VelocityParam>::shaderStageDefault(geomShaderModule, VK_SHADER_STAGE_GEOMETRY_BIT),
+            Pipeline<VelocityParam>::shaderStageDefault(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT)
+        };
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachment {};
+        colorBlendAttachment.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.blendEnable         = VK_FALSE;
+        VkPipelineColorBlendStateCreateInfo colorBlending {};
+        colorBlending.sType            = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlending.logicOpEnable    = VK_FALSE;
+        colorBlending.attachmentCount  = 1;
+        colorBlending.pAttachments     = &colorBlendAttachment;
+
+        VkPipelineDepthStencilStateCreateInfo depthStencil {};
+        depthStencil.sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable   = VK_FALSE;
+        depthStencil.depthWriteEnable  = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
+
+        VkGraphicsPipelineCreateInfo pipelineInfo {};
+        pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount          = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages             = shaderStages.data();
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pVertexInputState   = &vertexInput;
+        pipelineInfo.pViewportState      = &viewportState;
+        pipelineInfo.pRasterizationState = &rasterization;
+        pipelineInfo.pDepthStencilState  = &depthStencil;
+        pipelineInfo.pMultisampleState   = &multisample;
+        pipelineInfo.pColorBlendState    = &colorBlending;
+        pipelineInfo.pDynamicState       = &dynamicState;
+        pipelineInfo.layout              = velocity_pipeline.layout;
+        pipelineInfo.renderPass          = render_pass;
+        pipelineInfo.subpass             = 1;
+        if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &velocity_pipeline.pipeline) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create vertices position feedback pipeline!");
+        }
+        vkDestroyShaderModule(g_ctx.vk.device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(g_ctx.vk.device, geomShaderModule, nullptr);
+        vkDestroyShaderModule(g_ctx.vk.device, fragShaderModule, nullptr);
+    }
+
+    {
+        velocity_pipeline.param.projSpacePixDim      = glm::vec2(1.f / static_cast<float>(VOXEL_GRID_SIZE), 1.f / static_cast<float>(VOXEL_GRID_SIZE));
+        velocity_pipeline.param.deltaT               = 0.00555f; // default value, will be updated every frame
+        velocity_pipeline.param.voxelizationViewMat  = g_ctx.dm.getResourceHandle(view_mat_buffer.id);
+        velocity_pipeline.param.voxelizationProjMats = g_ctx.dm.getResourceHandle(proj_mats_buffer.id);
+
+        velocity_pipeline.param_buf = Buffer::New(
+            g_ctx.vk,
+            sizeof(VelocityParam),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true
+        );
+        velocity_pipeline.param_buf.Update(g_ctx.vk, &velocity_pipeline.param, sizeof(VelocityParam));
+        g_ctx.dm.registerParameter(velocity_pipeline.param_buf);
     }
 }
 
@@ -319,19 +434,20 @@ void Voxelization::createVertexPosPipeline(Configuration &cfg)
     }
 
     {
-        auto vertexInput   = getVertexInputeState();
+        auto vertexInput   = getVertexInputState();
         DynamicStateDefault();
         auto viewportState = getViewportState();
-        auto inputAssembly = Pipeline<Param>::inputAssemblyDefault();
+        auto inputAssembly = Pipeline<EmptyParam>::inputAssemblyDefault();
         auto rasterization = getRasterizationState(false);
-        auto multisample   = Pipeline<Param>::multisampleDefault();
+        auto multisample   = Pipeline<EmptyParam>::multisampleDefault();
 
         JSON_GET(RenderGraphConfiguration, rg_cfg, cfg, "render_graph");
         auto vertShaderCode    = readFile(rg_cfg.shader_directory + "/voxelization/vertexPos.vert.spv");
         auto vertShaderModule  = createShaderModule(g_ctx.vk, vertShaderCode);
         std::vector shaderStages = {
-            Pipeline<Param>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
+            Pipeline<EmptyParam>::shaderStageDefault(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT),
         };
+
         VkPipelineColorBlendStateCreateInfo colorBlending {};
         colorBlending.sType            = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable    = VK_FALSE;
@@ -358,7 +474,7 @@ void Voxelization::createVertexPosPipeline(Configuration &cfg)
         pipelineInfo.pDynamicState       = &dynamicState;
         pipelineInfo.layout              = vertex_pos_pipeline.layout;
         pipelineInfo.renderPass          = render_pass;
-        pipelineInfo.subpass             = 1;
+        pipelineInfo.subpass             = 2;
         if (vkCreateGraphicsPipelines(g_ctx.vk.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vertex_pos_pipeline.pipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create vertices position feedback pipeline!");
         }
@@ -383,20 +499,29 @@ void Voxelization::setViewportAndScissor()
     vkCmdSetScissor(g_ctx.vk.commandBuffer, 0, 1, &scissor);
 }
 
+void Voxelization::updateTime() {
+    velocity_pipeline.param.deltaT = g_ctx.frame_time;
+    //velocity_pipeline.param.deltaT = 0.00555f;
+    //INFO_ALL("Delt time: " + std::to_string(velocity_pipeline.param.deltaT) + "s");
+    velocity_pipeline.param_buf.Update(g_ctx.vk, &velocity_pipeline.param, sizeof(VelocityParam));
+}
+
 void Voxelization::record(uint32_t swapchain_index)
 {
+    updateTime();
     setViewportAndScissor();
 
-    VkClearValue clearValue;
-    clearValue.depthStencil = { 1.0f, 0 };
+    std::array<VkClearValue, 2> clearValues {};
+    clearValues[0].depthStencil = { 1.0f, 0 };
+    clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f };
     VkRenderPassBeginInfo renderPassInfo {};
     renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass        = render_pass;
     renderPassInfo.framebuffer       = framebuffers[swapchain_index];
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
-    renderPassInfo.clearValueCount   = 1;
-    renderPassInfo.pClearValues      = &clearValue;
+    renderPassInfo.clearValueCount   = clearValues.size();
+    renderPassInfo.pClearValues      = clearValues.data();
     vkCmdBeginRenderPass(g_ctx.vk.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     // Subpass 0, mesh voxelization
@@ -417,7 +542,28 @@ void Voxelization::record(uint32_t swapchain_index)
         vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
     }
 
-    // Subpass 1, each object writes its vertices positions to object's own position buffer.
+    // Subpass 1, each objects writes its velocity to the velocity texture
+    // This is not a good pattern for using subpass since these two subpasses don't share any
+    // on-chip memory resource. However, the bottleneck is in the simulation side so we can keep the current
+    // design to achieve minimum modifications of the render engine for implementing voxelization.
+    vkCmdNextSubpass(g_ctx.vk.commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, velocity_pipeline.pipeline);
+    bindDescriptorSet(1, velocity_pipeline.layout, g_ctx.dm.getParameterSet(velocity_pipeline.param_buf.id));
+
+    for (int i = 0; i < g_ctx.rm->objects.size(); ++i) {
+        const Object& obj = g_ctx.rm->objects[i];
+        const Mesh& mesh = g_ctx.rm->meshes[obj.mesh];
+        if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
+            continue;
+
+        bindDescriptorSet(2, velocity_pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
+        constexpr VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
+        vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
+    }
+
+    // Subpass 2, each object writes its vertices positions to object's own position buffer.
     // This is not a good pattern for using subpass since these two subpasses don't share any
     // on-chip memory resource. And the way it uses the transform feedback is also inoptimal
     // since it does not use any indirect draw commands but issuing of a bunch of commands in
@@ -426,14 +572,15 @@ void Voxelization::record(uint32_t swapchain_index)
     vkCmdNextSubpass(g_ctx.vk.commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(g_ctx.vk.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vertex_pos_pipeline.pipeline);
 
-    for (const auto& obj : g_ctx.rm->objects) {
-        const auto& mesh = g_ctx.rm->meshes[obj.mesh];
+    for (int i = 0; i < g_ctx.rm->objects.size(); ++i) {
+        const Object& obj = g_ctx.rm->objects[i];
+        const Mesh& mesh = g_ctx.rm->meshes[obj.mesh];
         if (!mesh.isWaterTight) // This voxelization method only apply to watertight mesh, exclude scene boundary meshes
             continue;
 
         bindDescriptorSet(0, vertex_pos_pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         constexpr VkDeviceSize offsets[] = { 0 };
-        Vk::vkCmdBindTransformFeedbackBuffersEXT(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[0].buffer, offsets, nullptr);
+        Vk::vkCmdBindTransformFeedbackBuffersEXT(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[i].buffer, offsets, nullptr);
         Vk::vkCmdBeginTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
 
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
