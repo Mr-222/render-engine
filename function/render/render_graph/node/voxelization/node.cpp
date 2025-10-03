@@ -501,7 +501,6 @@ void Voxelization::setViewportAndScissor()
 
 void Voxelization::updateTime() {
     velocity_pipeline.param.deltaT = g_ctx.frame_time;
-    //velocity_pipeline.param.deltaT = 0.00555f;
     //INFO_ALL("Delt time: " + std::to_string(velocity_pipeline.param.deltaT) + "s");
     velocity_pipeline.param_buf.Update(g_ctx.vk, &velocity_pipeline.param, sizeof(VelocityParam));
 }
