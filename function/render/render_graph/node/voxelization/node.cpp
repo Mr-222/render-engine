@@ -41,7 +41,7 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                VK_FORMAT_R8G8B8A8_SNORM,
+                VK_FORMAT_R16G16B16A16_SFLOAT,
                 { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
                 VOXEL_GRID_SIZE,
             }
