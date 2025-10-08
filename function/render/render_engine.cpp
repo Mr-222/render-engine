@@ -5,7 +5,6 @@
 #include "function/global_context.h"
 #include "function/render/render_graph/graph/graph.h"
 #include "function/resource_manager/resource_manager.h"
-#include "function/type/transform.h"
 #include <GLFW/glfw3.h>
 
 using namespace Vk;
@@ -48,6 +47,8 @@ void RenderEngine::initRenderGraph(std::function<void(VkCommandBuffer)> fn, std:
         render_graph = std::make_unique<FireFieldGraph>();
     } else if (render_graph_cfg.name == "vorticity_field") {
         render_graph = std::make_unique<VorticityFieldGraph>();
+    } else if (render_graph_cfg.name == "dynamic_obstacle") {
+        render_graph = std::make_unique<DynamicObstacleGraph>();
     } else {
         throw std::runtime_error("render graph not found: " + render_graph_cfg.name);
     }
