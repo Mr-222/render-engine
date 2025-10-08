@@ -121,8 +121,6 @@ struct RecorderConfiguration {
 };
 
 struct LFMConfiguration {
-    // time
-    int reinit_every;
     // domain
     float len_y;
     std::array<int, 3> tile_dim;
@@ -135,9 +133,6 @@ struct LFMConfiguration {
     std::string init_u_z_path;
     // simulation parameter
     int rk_order;
-    // smoke
-    int num_smoke;
-    std::string init_smoke_path_prefix;
     // bfecc clamp
     bool use_bfecc_clamp;
     // staic solid
@@ -259,7 +254,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     LFMConfiguration,
-    reinit_every,
     len_y,
     tile_dim,
     grid_origin,
@@ -269,8 +263,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     init_u_y_path,
     init_u_z_path,
     rk_order,
-    num_smoke,
-    init_smoke_path_prefix,
     use_bfecc_clamp,
     use_static_solid,
     solid_sdf_path);
