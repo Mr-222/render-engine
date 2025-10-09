@@ -68,32 +68,8 @@ void Field::init(const FieldConfiguration& cfg)
     g_ctx.dm.registerResource(field_img, DescriptorType::CombinedImageSampler);
 }
 
-std::vector<float> Field::loadFieldData(const FieldConfiguration& cfg)
-{
-    std::string extension_name = std::filesystem::path(cfg.path).extension().string();
-
-    std::vector<float> data;
-    if (extension_name == ".npy") {
-        npy::npy_data d         = npy::read_npy<float>(cfg.path);
-        data                    = d.data;
-        const auto& image_shape = d.shape;
-        assert(image_shape[0] == cfg.dimension[0]);
-        assert(image_shape[1] == cfg.dimension[1]);
-        assert(image_shape[2] == cfg.dimension[2]);
-    } else if (extension_name == ".vti") {
-        data = readVti<float>(cfg.path, cfg.name, nullptr);
-    } else {
-        ERROR_ALL("Unknown file extension \"" + extension_name + "\"");
-        throw std::runtime_error("Unknown file extension \"" + extension_name + "\"");
-    }
-
-    return data;
-}
-
 void Field::initFieldImage(const FieldConfiguration& cfg)
 {
-    const auto image_data = loadFieldData(cfg);
-
     auto extent = VkExtent3D {
         static_cast<uint32_t>(cfg.dimension[0]),
         static_cast<uint32_t>(cfg.dimension[1]),
@@ -112,7 +88,6 @@ void Field::initFieldImage(const FieldConfiguration& cfg)
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_TYPE_3D,
         VK_IMAGE_VIEW_TYPE_3D);
-    field_img.Update(g_ctx.vk, image_data.data());
     field_img.AddDefaultSampler(g_ctx.vk);
     field_img.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }

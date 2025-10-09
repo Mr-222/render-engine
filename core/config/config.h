@@ -59,7 +59,6 @@ struct RenderGraphConfiguration {
 
 struct FieldConfiguration {
     std::string name;
-    std::string path;
     std::string data_type;
     std::array<float, 3> start_pos;
     std::array<float, 3> size;
@@ -127,10 +126,6 @@ struct LFMConfiguration {
     std::array<float, 3> grid_origin;
     float inlet_norm;
     float inlet_angle;
-    // init
-    std::string init_u_x_path;
-    std::string init_u_y_path;
-    std::string init_u_z_path;
     // simulation parameter
     int rk_order;
     // bfecc clamp
@@ -192,7 +187,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     FieldConfiguration,
     name,
-    path,
     data_type,
     start_pos,
     size,
@@ -259,9 +253,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     grid_origin,
     inlet_norm,
     inlet_angle,
-    init_u_x_path,
-    init_u_y_path,
-    init_u_z_path,
     rk_order,
     use_bfecc_clamp,
     use_static_solid,

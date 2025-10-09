@@ -45,7 +45,6 @@ struct Field {
 
 private:
     void initFieldImage(const FieldConfiguration& cfg);
-    std::vector<float> loadFieldData(const FieldConfiguration& cfg);
 };
 
 class FireLightsUpdater;
