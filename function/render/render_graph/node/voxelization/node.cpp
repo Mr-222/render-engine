@@ -23,10 +23,10 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
             {
                 voxel_tex_name,
                 0,
-                RenderAttachmentType::Stencil | RenderAttachmentType::DontRecreateOnResize,
+                RenderAttachmentType::Stencil | RenderAttachmentType::External | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_FORMAT_S8_UINT,
                 { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
                 VOXEL_GRID_SIZE,
@@ -37,10 +37,10 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
             {
                 velocity_tex_name,
                 1,
-                RenderAttachmentType::Color | RenderAttachmentType::DontRecreateOnResize,
+                RenderAttachmentType::Color | RenderAttachmentType::External | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_FORMAT_R16G16B16A16_SFLOAT,
                 { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
                 VOXEL_GRID_SIZE,
@@ -52,6 +52,13 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
 void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
 {
     this->attachments = &attachments;
+    Image& voxel_img = attachments.getAttachment("voxel");
+    Image& velocity_img = attachments.getAttachment("velocity");
+    assert(!g_ctx.rm->textures.contains("voxel"));
+    assert(!g_ctx.rm->textures.contains("velocity"));
+    g_ctx.rm->textures["voxel"] = Texture { "voxel", voxel_img };
+    g_ctx.rm->textures["velocity"] = Texture { "velocity", velocity_img };
+
     createMatsBuffer();
     createVertPosBuffer();
     createRenderPass();

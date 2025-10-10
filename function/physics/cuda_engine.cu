@@ -39,8 +39,14 @@ void CudaEngine::importExtBuffer(const ExtBufferDesc& buffer_desc)
 
 void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
 {
-    assert(image_desc.width * image_desc.height * image_desc.depth
-           == image_desc.image_size / image_desc.element_size);
+    static std::unordered_map<VkFormat, cudaChannelFormatDesc> channel_map {
+            { VK_FORMAT_R32_SFLOAT, { 32, 0, 0, 0, cudaChannelFormatKindFloat } },
+            { VK_FORMAT_S8_UINT,    { 8, 0, 0, 0, cudaChannelFormatKindUnsigned } },
+            { VK_FORMAT_R16G16B16A16_SFLOAT, { 16, 16, 16, 16, cudaChannelFormatKindFloat } }
+    };
+
+    assert(image_desc.width * image_desc.height * image_desc.depth == image_desc.image_size / image_desc.element_size);
+    assert(channel_map.contains(image_desc.format));
 
     cudaExternalMemoryHandleDesc externalMemoryDesc = {};
     {
@@ -57,19 +63,12 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
     cudaImportExternalMemory(&ext_mem, &externalMemoryDesc);
 
     cudaExtent extent = make_cudaExtent(image_desc.width, image_desc.height, image_desc.depth);
-    cudaChannelFormatDesc formatDesc;
-    {
-        formatDesc.x = image_desc.element_size * 8;
-        formatDesc.y = 0;
-        formatDesc.z = 0;
-        formatDesc.w = 0;
-        formatDesc.f = cudaChannelFormatKindFloat;
-    }
+
     cudaExternalMemoryMipmappedArrayDesc ext_mipmapped_arr_desc;
     {
         memset(&ext_mipmapped_arr_desc, 0, sizeof(ext_mipmapped_arr_desc));
         ext_mipmapped_arr_desc.offset     = 0;
-        ext_mipmapped_arr_desc.formatDesc = formatDesc;
+        ext_mipmapped_arr_desc.formatDesc = channel_map[image_desc.format];
         ext_mipmapped_arr_desc.extent     = extent;
         ext_mipmapped_arr_desc.flags      = 0;
         ext_mipmapped_arr_desc.numLevels  = 1;

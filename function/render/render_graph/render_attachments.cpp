@@ -44,7 +44,7 @@ void RenderAttachments::addAttachment(const std::string& name, RenderAttachmentT
         VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,
         1,
         numLayers,
-        false,
+        static_cast<uint8_t>(type & RenderAttachmentType::External) != 0,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_TYPE_2D,
         numLayers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);

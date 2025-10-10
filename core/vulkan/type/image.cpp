@@ -108,6 +108,32 @@ void Image::Update(const Context& ctx, const void* data, uint32_t mipLevel)
     vkFreeMemory(ctx.device, staging_buffer_memory, nullptr);
 }
 
+#ifdef _WIN64
+    HANDLE Image::getVkMemHandle(const Context& ctx) const
+    {
+        HANDLE handle;
+        VkMemoryGetWin32HandleInfoKHR vkMemoryGetWin32HandleInfoKHR = {};
+        vkMemoryGetWin32HandleInfoKHR.sType                         = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
+        vkMemoryGetWin32HandleInfoKHR.memory                        = memory;
+        vkMemoryGetWin32HandleInfoKHR.handleType                    = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+
+        fpGetMemoryWin32Handle(ctx.device, &vkMemoryGetWin32HandleInfoKHR, &handle);
+        return handle;
+    }
+#else
+    int Image::getVkMemHandle(const Context& ctx) const
+    {
+        int fd;
+        VkMemoryGetFdInfoKHR vkMemoryGetFdInfoKHR = {};
+        vkMemoryGetFdInfoKHR.sType                = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
+        vkMemoryGetFdInfoKHR.memory               = memory;
+        vkMemoryGetFdInfoKHR.handleType           = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+
+        fpGetMemoryFdKHR(ctx.device, &vkMemoryGetFdInfoKHR, &fd);
+        return fd;
+    }
+#endif
+
 void Image::CopyTo(
     const Context& ctx,
     Image& dst,

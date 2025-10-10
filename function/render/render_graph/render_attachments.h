@@ -6,11 +6,12 @@
 #include <unordered_map>
 
 enum class RenderAttachmentType : uint8_t {
-    Color   = 1 << 0,
-    Depth   = 1 << 1,
-    Stencil = 1 << 2,
-    Sampler = 1 << 3,
-    DontRecreateOnResize = 1 << 4,
+    Color    = 1 << 0,
+    Depth    = 1 << 1,
+    Stencil  = 1 << 2,
+    Sampler  = 1 << 3,
+    External = 1 << 4, // will be used by CUDA engine
+    DontRecreateOnResize = 1 << 5,
 };
 DEFINE_ENUM_BIT_OPERATORS(RenderAttachmentType)
 

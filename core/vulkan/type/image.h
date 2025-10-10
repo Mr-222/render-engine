@@ -3,6 +3,8 @@
 #include "core/tool/uuid.h"
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#define NOMINMAX
+#include <windows.h>
 
 namespace Vk {
 struct Context;
@@ -30,6 +32,11 @@ struct Image {
     void AddSampler(const Context& ctx, const VkFilter filter, const std::vector<VkSamplerAddressMode>& addressMode, const VkBorderColor borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK);
     void AddDefaultSampler(const Context& ctx);
     void Update(const Context& ctx, const void* data, uint32_t mipLevel = 0);
+#ifdef _WIN64
+    void* getVkMemHandle(const Context& ctx) const;
+#else
+    int getVkMemHandle();
+#endif
     void TransitionLayout(const Context& ctx, VkImageLayout newLayout);
     void TransitionLayoutSingleTime(const Context& ctx, VkImageLayout newLayout);
     void CopyTo(

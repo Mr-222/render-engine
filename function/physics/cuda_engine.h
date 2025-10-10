@@ -33,6 +33,7 @@ public:
         size_t width;
         size_t height;
         size_t depth;
+        VkFormat format;
         std::string name;
     };
 
