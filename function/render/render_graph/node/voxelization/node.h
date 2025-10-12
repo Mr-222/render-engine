@@ -31,8 +31,6 @@ class Voxelization : public RenderGraphNode {
     void setViewportAndScissor();
     void updateTime();
 
-    static constexpr uint32_t VOXEL_GRID_SIZE = 256;
-
     Pipeline<VoxelParam> voxel_pipeline;
     Pipeline<VelocityParam> velocity_pipeline;
     Pipeline<EmptyParam> vertex_pos_pipeline;
@@ -42,16 +40,18 @@ class Voxelization : public RenderGraphNode {
 
     std::vector<Vk::Buffer> vert_pos_buffers;
 
+    VoxelizerConfiguration config;
     glm::mat4 view_mat;
     Vk::Buffer view_mat_buffer;
-    std::array<glm::mat4, VOXEL_GRID_SIZE> proj_mats;
+    std::vector<glm::mat4> proj_mats;
     Vk::Buffer proj_mats_buffer;
 
 public:
     Voxelization(
         const std::string& name,
         const std::string& voxel_tex_name,
-        const std::string& velocity_tex_name);
+        const std::string& velocity_tex_name,
+        const Configuration& cfg);
 
     void init(Configuration& cfg, RenderAttachments& attachments) override;
     void record(uint32_t swapchain_index) override;

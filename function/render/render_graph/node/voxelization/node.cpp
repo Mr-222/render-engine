@@ -13,9 +13,14 @@
 
 using namespace Vk;
 
-Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex_name, const std::string& velocity_tex_name)
+Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex_name, const std::string& velocity_tex_name, const Configuration& cfg)
     : RenderGraphNode(name)
 {
+    if (!cfg.contains("voxelizer"))
+        ERROR_CONSOLE("Config file does not contain voxelizer section!");
+    config = cfg.at("voxelizer");
+    proj_mats.resize(config.dimension[1]);
+
     assert(voxel_tex_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
     attachment_descriptions = {
         {
@@ -28,8 +33,8 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_FORMAT_S8_UINT,
-                { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
-                VOXEL_GRID_SIZE,
+                { config.dimension[0], config.dimension[2], 1 },
+                config.dimension[1],
             },
         },
         {
@@ -42,8 +47,8 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_FORMAT_R16G16B16A16_SFLOAT,
-                { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE, 1 },
-                VOXEL_GRID_SIZE,
+                { config.dimension[0], config.dimension[2], 1 },
+                config.dimension[1],
             }
         },
     };
@@ -70,9 +75,12 @@ void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
 
 void Voxelization::createMatsBuffer()
 {
+    auto eye_pos = glm::vec3(config.start_pos[0] + config.size[0] / 2.0f, config.start_pos[1], config.start_pos[2] + config.size[2] / 2.0f);
+    auto center  = glm::vec3(config.start_pos[0] + config.size[0] / 2.0f, config.start_pos[1] + config.size[1] / 2.0f, config.start_pos[2] + config.size[2] / 2.0f);
+
     view_mat = glm::lookAt(
-        glm::vec3(0.0f, 3.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
+        eye_pos,
+        center,
         glm::vec3(0.0f, 0.0f, -1.0f)
     );
     view_mat_buffer = Buffer::New(
@@ -85,21 +93,23 @@ void Voxelization::createMatsBuffer()
     view_mat_buffer.Update(g_ctx.vk, &view_mat, sizeof(glm::mat4));
     g_ctx.dm.registerResource(view_mat_buffer, DescriptorType::Uniform);
 
-    // Near plane matches the depth of the current slice
-    for (int i = 0; i < VOXEL_GRID_SIZE; ++i) {
-        constexpr float left = -2.f, right = 2.f, bottom = -2.f, top = 2.f, farPlane = 6.f;
-        constexpr float step = farPlane / VOXEL_GRID_SIZE;
-        proj_mats[i] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step, farPlane);
+    for (int i = 0; i < config.dimension[1]; ++i) {
+        const float left = -config.size[0] / 2.f, right = config.size[0] / 2.f, bottom = -config.size[2] / 2.f, top = config.size[2] / 2.f;
+        const float farPlane = config.size[1];
+        const float step = farPlane / config.dimension[1];
+        const float half_step = step * 0.5f;
+        // Near plane matches the depth of the current slice
+        proj_mats[i] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step + half_step, farPlane);
         proj_mats[i][1][1] *= -1;
     }
     proj_mats_buffer = Buffer::New(
         g_ctx.vk,
-        sizeof(proj_mats),
+        sizeof(glm::mat4) * proj_mats.size(),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         true
     );
-    proj_mats_buffer.Update(g_ctx.vk, proj_mats.data(), sizeof(proj_mats));
+    proj_mats_buffer.Update(g_ctx.vk, proj_mats.data(), sizeof(glm::mat4) * proj_mats.size());
     g_ctx.dm.registerResource(proj_mats_buffer, DescriptorType::Storage);
 }
 
@@ -176,9 +186,9 @@ void Voxelization::createFramebuffer()
         framebufferInfo.renderPass      = render_pass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(views.size());
         framebufferInfo.pAttachments    = views.data();
-        framebufferInfo.width           = VOXEL_GRID_SIZE;
-        framebufferInfo.height          = VOXEL_GRID_SIZE;
-        framebufferInfo.layers          = VOXEL_GRID_SIZE;
+        framebufferInfo.width           = config.dimension[0];
+        framebufferInfo.height          = config.dimension[2];
+        framebufferInfo.layers          = config.dimension[1];
 
         if (vkCreateFramebuffer(g_ctx.vk.device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
@@ -227,14 +237,14 @@ VkPipelineViewportStateCreateInfo Voxelization::getViewportState()
     static VkViewport viewport {};
     viewport.x        = 0.0f;
     viewport.y        = 0.0f;
-    viewport.width    = static_cast<float>(VOXEL_GRID_SIZE);
-    viewport.height   = static_cast<float>(VOXEL_GRID_SIZE);
+    viewport.width    = static_cast<float>(config.dimension[0]);
+    viewport.height   = static_cast<float>(config.dimension[2]);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     static VkRect2D scissor {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
+    scissor.extent = { config.dimension[0], config.dimension[2] };
 
     VkPipelineViewportStateCreateInfo viewportState {};
     viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -414,7 +424,7 @@ void Voxelization::createVelocityRecordPipeline(Configuration &cfg)
     }
 
     {
-        velocity_pipeline.param.projSpacePixDim      = glm::vec2(1.f / static_cast<float>(VOXEL_GRID_SIZE), 1.f / static_cast<float>(VOXEL_GRID_SIZE));
+        velocity_pipeline.param.projSpacePixDim      = glm::vec2(1.f / static_cast<float>(config.dimension[0]), 1.f / static_cast<float>(config.dimension[2]));
         velocity_pipeline.param.deltaT               = 0.00555f; // default value, will be updated every frame
         velocity_pipeline.param.voxelizationViewMat  = g_ctx.dm.getResourceHandle(view_mat_buffer.id);
         velocity_pipeline.param.voxelizationProjMats = g_ctx.dm.getResourceHandle(proj_mats_buffer.id);
@@ -494,15 +504,15 @@ void Voxelization::setViewportAndScissor()
     VkViewport viewport {};
     viewport.x        = 0.0f;
     viewport.y        = 0.0f;
-    viewport.width    = static_cast<float>(VOXEL_GRID_SIZE);
-    viewport.height   = static_cast<float>(VOXEL_GRID_SIZE);
+    viewport.width    = static_cast<float>(config.dimension[0]);
+    viewport.height   = static_cast<float>(config.dimension[2]);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(g_ctx.vk.commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
+    scissor.extent = { config.dimension[0], config.dimension[2] };
     vkCmdSetScissor(g_ctx.vk.commandBuffer, 0, 1, &scissor);
 }
 
@@ -525,7 +535,7 @@ void Voxelization::record(uint32_t swapchain_index)
     renderPassInfo.renderPass        = render_pass;
     renderPassInfo.framebuffer       = framebuffers[swapchain_index];
     renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = { VOXEL_GRID_SIZE, VOXEL_GRID_SIZE };
+    renderPassInfo.renderArea.extent = { config.dimension[0], config.dimension[2] };
     renderPassInfo.clearValueCount   = clearValues.size();
     renderPassInfo.pClearValues      = clearValues.data();
     vkCmdBeginRenderPass(g_ctx.vk.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -545,7 +555,7 @@ void Voxelization::record(uint32_t swapchain_index)
         constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
+        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), config.dimension[1], 0, 0, 0);
     }
 
     // Subpass 1, each objects writes its velocity to the velocity texture
@@ -566,7 +576,7 @@ void Voxelization::record(uint32_t swapchain_index)
         constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), VOXEL_GRID_SIZE, 0, 0, 0);
+        vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), config.dimension[1], 0, 0, 0);
     }
 
     // Subpass 2, each object writes its vertices positions to object's own position buffer.

@@ -51,6 +51,12 @@ struct CameraConfiguration {
     float move_speed;
 };
 
+struct VoxelizerConfiguration {
+    std::array<float, 3> start_pos;
+    std::array<float, 3> size;
+    std::array<uint32_t, 3> dimension;
+};
+
 struct RenderGraphConfiguration {
     std::string name;
     std::string shader_directory;
@@ -162,6 +168,13 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     view,
     fov,
     move_speed);
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    VoxelizerConfiguration,
+    start_pos,
+    size,
+    dimension
+);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     RenderGraphConfiguration,
