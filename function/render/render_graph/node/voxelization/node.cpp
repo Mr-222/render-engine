@@ -17,7 +17,7 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
     : RenderGraphNode(name)
 {
     if (!cfg.contains("voxelizer"))
-        ERROR_CONSOLE("Config file does not contain voxelizer section!");
+        ERROR_ALL("Config file does not contain voxelizer section!");
     config = cfg.at("voxelizer");
     proj_mats.resize(config.dimension[1]);
 

@@ -103,11 +103,9 @@ void RenderEngine::draw()
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     std::vector<VkSemaphore> waitSemaphores = { g_ctx->vk.imageAvailableSemaphores[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT] };
-    if (g_ctx->currentFrame != 0)
-        waitSemaphores.emplace_back(g_ctx->vk.cuUpdateSemaphore);
+    waitSemaphores.emplace_back(g_ctx->vk.cuUpdateSemaphore);
     std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    if (g_ctx->currentFrame != 0)
-        waitStages.emplace_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    waitStages.emplace_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     submitInfo.waitSemaphoreCount = waitSemaphores.size();
     submitInfo.pWaitSemaphores    = waitSemaphores.data();
     submitInfo.pWaitDstStageMask  = waitStages.data();
