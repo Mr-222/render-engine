@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 using json = nlohmann::json;
@@ -139,6 +138,8 @@ struct LFMConfiguration {
     // staic solid
     bool use_static_solid;
     std::string solid_sdf_path;
+    // dynamic solid
+    bool use_dynamic_solid;
 
     static LFMConfiguration Load(const std::string& config_path);
 };
@@ -269,7 +270,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     rk_order,
     use_bfecc_clamp,
     use_static_solid,
-    solid_sdf_path);
+    solid_sdf_path,
+    use_dynamic_solid);
 
 #define JSON_GET(type, name, j, key)                                                                                                 \
     type name;                                                                                                                       \

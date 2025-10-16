@@ -103,11 +103,9 @@ void RenderEngine::draw()
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     std::vector<VkSemaphore> waitSemaphores = { g_ctx->vk.imageAvailableSemaphores[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT] };
-    if (g_ctx->currentFrame != 0)
-        waitSemaphores.emplace_back(g_ctx->vk.cuUpdateSemaphore);
+    waitSemaphores.emplace_back(g_ctx->vk.cuUpdateSemaphore);
     std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    if (g_ctx->currentFrame != 0)
-        waitStages.emplace_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    waitStages.emplace_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     submitInfo.waitSemaphoreCount = waitSemaphores.size();
     submitInfo.pWaitSemaphores    = waitSemaphores.data();
     submitInfo.pWaitDstStageMask  = waitStages.data();
@@ -121,7 +119,8 @@ void RenderEngine::draw()
     submitInfo.signalSemaphoreCount = 2;
     submitInfo.pSignalSemaphores    = signalSemaphores;
 
-    if (vkQueueSubmit(g_ctx->vk.queue, 1, &submitInfo, g_ctx->vk.inFlightFences[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT]) != VK_SUCCESS) {
+    if (result = vkQueueSubmit(g_ctx->vk.queue, 1, &submitInfo, g_ctx->vk.inFlightFences[g_ctx->currentFrame % MAX_FRAMES_IN_FLIGHT]); result != VK_SUCCESS) {
+        ERROR_ALL("QueueSubmit failed: " + std::to_string(result));
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 

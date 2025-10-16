@@ -1,9 +1,9 @@
 #include "core/config/config.h"
+#include "core/tool/logger.h"
 #include "core/vulkan/vulkan_context.h"
 #include "cuda_engine.h"
 #include "function/global_context.h"
 #include <cassert>
-// #include "shared_data.h"
 
 void CudaEngine::importExtBuffer(const ExtBufferDesc& buffer_desc)
 {
@@ -60,10 +60,14 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
     }
     externalMemoryDesc.size = image_desc.image_size;
     cudaExternalMemory_t ext_mem;
-    cudaImportExternalMemory(&ext_mem, &externalMemoryDesc);
+
+    cudaError_t res;
+
+    res = cudaImportExternalMemory(&ext_mem, &externalMemoryDesc);
+    if (res != cudaSuccess)
+        ERROR_ALL("cudaImportExternalMemory failed: " + std::string(cudaGetErrorString(res)));
 
     cudaExtent extent = make_cudaExtent(image_desc.width, image_desc.height, image_desc.depth);
-
     cudaExternalMemoryMipmappedArrayDesc ext_mipmapped_arr_desc;
     {
         memset(&ext_mipmapped_arr_desc, 0, sizeof(ext_mipmapped_arr_desc));
@@ -74,7 +78,9 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
         ext_mipmapped_arr_desc.numLevels  = 1;
     }
     cudaMipmappedArray_t mipmapped_arr;
-    cudaExternalMemoryGetMappedMipmappedArray(&mipmapped_arr, ext_mem, &ext_mipmapped_arr_desc);
+    res = cudaExternalMemoryGetMappedMipmappedArray(&mipmapped_arr, ext_mem, &ext_mipmapped_arr_desc);
+    if (res != cudaSuccess)
+        ERROR_ALL("cudaExternalMemoryGetMappedMipmappedArray failed: " + std::string(cudaGetErrorString(res)));
 
     cudaArray_t arr_0;
     cudaGetMipmappedArrayLevel(&arr_0, mipmapped_arr, 0);
@@ -85,7 +91,9 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
         res_desc.res.array.array = arr_0;
     }
     cudaSurfaceObject_t surface_object;
-    cudaCreateSurfaceObject(&surface_object, &res_desc);
+    res = cudaCreateSurfaceObject(&surface_object, &res_desc);
+    if (res != cudaSuccess)
+        ERROR_ALL("cudaCreateSurfaceObject failed: " +  std::string(cudaGetErrorString(res)));
 
     extImages[image_desc.name] = {
         ext_mem,
@@ -134,6 +142,7 @@ void CudaEngine::init(Configuration& cfg, GlobalContext* g_ctx)
     cudaStreamCreate(&streamToRun);
     initSemaphore();
     initExternalMem();
+    signalSemaphore(cuUpdateSemaphore);
 }
 
 void CudaEngine::step()
