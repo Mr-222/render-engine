@@ -61,9 +61,7 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
     externalMemoryDesc.size = image_desc.image_size;
     cudaExternalMemory_t ext_mem;
 
-    cudaError_t res;
-
-    res = cudaImportExternalMemory(&ext_mem, &externalMemoryDesc);
+    cudaError_t res = cudaImportExternalMemory(&ext_mem, &externalMemoryDesc);
     if (res != cudaSuccess)
         ERROR_ALL("cudaImportExternalMemory failed: " + std::string(cudaGetErrorString(res)));
 

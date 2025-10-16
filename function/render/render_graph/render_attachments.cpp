@@ -41,7 +41,7 @@ void RenderAttachments::addAttachment(const std::string& name, RenderAttachmentT
         extent,
         usage,
         getAspectFlags(type),
-        VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         1,
         numLayers,
         static_cast<uint8_t>(type & RenderAttachmentType::External) != 0,
