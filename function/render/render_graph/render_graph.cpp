@@ -104,7 +104,7 @@ void RenderGraph::record(uint32_t swapchain_index)
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    clearAttachments();
+    //clearAttachments();
 
     auto degree = in_degree;
     std::queue<std::string> queue;
