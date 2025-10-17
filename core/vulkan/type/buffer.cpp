@@ -82,6 +82,7 @@ void Buffer::CopyToSingleTime(
     const Context& ctx,
     Image& dst,
     const VkExtent3D& extent,
+    uint32_t numLayers,
     uint32_t mipLevel,
     size_t srcOffset,
     const VkOffset3D& dstOffset) const
@@ -98,6 +99,7 @@ void Buffer::CopyToSingleTime(
         dst.layout,
         dst.format,
         extent,
+        numLayers,
         mipLevel,
         dstOffset,
         srcOffset);
@@ -107,6 +109,7 @@ void Buffer::CopyTo(
     const Context& ctx,
     Image& dst,
     const VkExtent3D& extent,
+    uint32_t numLayers,
     uint32_t mipLevel,
     size_t srcOffset,
     const VkOffset3D& dstOffset) const
@@ -123,6 +126,7 @@ void Buffer::CopyTo(
         dst.layout,
         dst.format,
         extent,
+        numLayers,
         mipLevel,
         dstOffset,
         srcOffset);

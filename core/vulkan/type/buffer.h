@@ -30,6 +30,7 @@ struct Buffer {
         const Context& ctx,
         Image& dst,
         const VkExtent3D& extent,
+        uint32_t numLayers          = 1,
         uint32_t mipLevel           = 0,
         size_t srcOffset            = 0,
         const VkOffset3D& dstOffset = { 0, 0, 0 }) const;
@@ -45,6 +46,7 @@ struct Buffer {
         const Context& ctx,
         Image& dst,
         const VkExtent3D& extent,
+        uint32_t numLayers          = 1,
         uint32_t mipLevel           = 0,
         size_t srcOffset            = 0,
         const VkOffset3D& dstOffset = { 0, 0, 0 }) const;

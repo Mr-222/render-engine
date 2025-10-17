@@ -24,6 +24,7 @@ class Voxelization : public RenderGraphNode {
     void createMatsBuffer();
     void createVertPosBuffer();
     void createRenderPass();
+    void createVoxelTex();
     void createFramebuffer();
     void createVoxelizationPipeline(Configuration& cfg);
     void createVelocityRecordPipeline(Configuration& cfg);
@@ -37,6 +38,9 @@ class Voxelization : public RenderGraphNode {
     VkRenderPass render_pass;
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
+
+    Vk::Image voxel_tex;
+    Vk::Buffer staging_buffer;
 
     std::vector<Vk::Buffer> vert_pos_buffers;
 

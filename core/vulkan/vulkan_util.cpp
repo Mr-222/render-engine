@@ -364,18 +364,16 @@ void transitionImageLayout(
     barrier.srcAccessMask                   = 0; // TODO
     barrier.dstAccessMask                   = 0; // TODO
 
-    assert(format != VK_FORMAT_D32_SFLOAT_S8_UINT && format != VK_FORMAT_D24_UNORM_S8_UINT);
-
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     } else {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
-    if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT|| format == VK_FORMAT_D32_SFLOAT) {
+    if (format == VK_FORMAT_D32_SFLOAT) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    } else if (format == VK_FORMAT_S8_UINT) {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+    } else if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
     const auto sourceDependency      = layoutDependencies.find(oldLayout);
@@ -416,6 +414,7 @@ void copyBufferToImage(
     VkImageLayout imageLayout,
     VkFormat format,
     const VkExtent3D& extent,
+    const uint32_t layerCount,
     const uint32_t mipLevel,
     const VkOffset3D& imageOffset,
     const VkDeviceSize& bufferOffset)
@@ -424,7 +423,7 @@ void copyBufferToImage(
         commandBuffer,
         image,
         format,
-        1,
+        layerCount,
         imageLayout,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -436,7 +435,7 @@ void copyBufferToImage(
     region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; // If it's a color image
     region.imageSubresource.mipLevel       = mipLevel; // Mipmap level
     region.imageSubresource.baseArrayLayer = 0; // Starting layer (for 3D image, usually 0)
-    region.imageSubresource.layerCount     = 1; // Only one "layer" for 3D images
+    region.imageSubresource.layerCount     = layerCount; // Number of layers to copy (for 3D image, usually 1)
 
     region.imageOffset = imageOffset;
     region.imageExtent = extent;
@@ -456,7 +455,7 @@ void copyBufferToImage(
         commandBuffer,
         image,
         format,
-        1,
+        layerCount,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         imageLayout);
 }
@@ -468,12 +467,13 @@ void copyBufferToImageSingleTime(
     VkImageLayout imageLayout,
     VkFormat format,
     const VkExtent3D& extent,
+    const uint32_t layerCount,
     const uint32_t mipLevel,
     const VkOffset3D& imageOffset,
     const VkDeviceSize& bufferOffset)
 {
     singleTimeCommands(ctx, [&](const VkCommandBuffer& commandBuffer) {
-        copyBufferToImage(commandBuffer, buffer, image, imageLayout, format, extent, mipLevel, imageOffset, bufferOffset);
+        copyBufferToImage(commandBuffer, buffer, image, imageLayout, format, extent, layerCount, mipLevel, imageOffset, bufferOffset);
     });
 }
 
@@ -483,7 +483,9 @@ void copyImageToBuffer(
     VkBuffer buffer,
     VkImageLayout imageLayout,
     VkFormat format,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    const uint32_t numLayers,
     const uint32_t mipLevel,
     const VkOffset3D& imageOffset,
     const VkDeviceSize& bufferOffset)
@@ -492,7 +494,7 @@ void copyImageToBuffer(
         commandBuffer,
         image,
         format,
-        1,
+        numLayers,
         imageLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -500,21 +502,19 @@ void copyImageToBuffer(
     region.bufferOffset                    = bufferOffset;
     region.bufferRowLength                 = 0; // Tightly packed
     region.bufferImageHeight               = 0; // Tightly packed
-    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.aspectMask     = flag;
     region.imageSubresource.mipLevel       = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount     = 1;
+    region.imageSubresource.layerCount     = numLayers;
     region.imageOffset                     = imageOffset;
     region.imageExtent                     = extent;
-    if (imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
     vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 
     transitionImageLayout(commandBuffer,
                           image,
                           format,
-                          1,
+                          numLayers,
                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                           imageLayout);
 }
@@ -525,13 +525,15 @@ void copyImageToBufferSingleTime(
     VkBuffer buffer,
     VkImageLayout imageLayout,
     VkFormat format,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    const uint32_t numLayers,
     const uint32_t mipLevel,
     const VkOffset3D& imageOffset,
     const VkDeviceSize& bufferOffset)
 {
     singleTimeCommands(ctx, [&](const VkCommandBuffer& commandBuffer) {
-        copyImageToBuffer(commandBuffer, image, buffer, imageLayout, format, extent, mipLevel, imageOffset, bufferOffset);
+        copyImageToBuffer(commandBuffer, image, buffer, imageLayout, format, flag, extent, numLayers, mipLevel, imageOffset, bufferOffset);
     });
 }
 

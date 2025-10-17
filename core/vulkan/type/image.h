@@ -50,10 +50,12 @@ struct Image {
     void CopyTo(
         const Context& ctx,
         Buffer& dst,
+        VkImageAspectFlags flag,
         const VkExtent3D& extent,
-        uint32_t mipLevel           = 0,
-        const VkOffset3D& srcOffset = { 0, 0, 0 },
-        size_t dstOffset            = 0) const;
+        uint32_t layerCount          = 1,
+        uint32_t mipLevel            = 0,
+        const VkOffset3D& srcOffset  ={ 0, 0, 0 },
+        size_t dstOffset             = 0) const;
     // No need to submit command buffer
     void CopyToSingleTime(
         const Context& ctx,
@@ -67,7 +69,9 @@ struct Image {
     void CopyToSingleTime(
         const Context& ctx,
         Buffer& dst,
+        VkImageAspectFlags flag,
         const VkExtent3D& extent,
+        uint32_t layerCount         = 1,
         uint32_t mipLevel           = 0,
         const VkOffset3D& srcOffset = { 0, 0, 0 },
         size_t dstOffset            = 0) const;

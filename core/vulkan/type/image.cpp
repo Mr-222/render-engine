@@ -102,7 +102,7 @@ void Image::Update(const Context& ctx, const void* data, uint32_t mipLevel)
     if (layout == VK_IMAGE_LAYOUT_UNDEFINED) {
         TransitionLayoutSingleTime(ctx, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     }
-    copyBufferToImageSingleTime(ctx, staging_buffer, image, layout, format, extent, mipLevel);
+    copyBufferToImageSingleTime(ctx, staging_buffer, image, layout, format, extent, numLayers, mipLevel);
 
     vkDestroyBuffer(ctx.device, staging_buffer, nullptr);
     vkFreeMemory(ctx.device, staging_buffer_memory, nullptr);
@@ -171,7 +171,9 @@ void Image::CopyTo(
 void Image::CopyTo(
     const Context& ctx,
     Buffer& dst,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    uint32_t layerCount,
     uint32_t mipLevel,
     const VkOffset3D& srcOffset,
     size_t dstOffset) const
@@ -187,7 +189,9 @@ void Image::CopyTo(
         dst.buffer,
         layout,
         format,
+        flag,
         extent,
+        layerCount,
         mipLevel,
         srcOffset,
         dstOffset);
@@ -230,7 +234,9 @@ void Image::CopyToSingleTime(
 void Image::CopyToSingleTime(
     const Context& ctx,
     Buffer& dst,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    uint32_t layerCount,
     uint32_t mipLevel,
     const VkOffset3D& srcOffset,
     size_t dstOffset) const
@@ -246,7 +252,9 @@ void Image::CopyToSingleTime(
         dst.buffer,
         layout,
         format,
+        flag,
         extent,
+        layerCount,
         mipLevel,
         srcOffset,
         dstOffset);

@@ -31,8 +31,8 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
                 RenderAttachmentType::Stencil | RenderAttachmentType::External | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_FORMAT_S8_UINT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
                 { config.dimension[0], config.dimension[2], 1 },
                 config.dimension[1],
             },
@@ -57,20 +57,20 @@ Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex
 void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
 {
     this->attachments = &attachments;
-    Image& voxel_img = attachments.getAttachment("voxel");
-    Image& velocity_img = attachments.getAttachment("velocity");
-    assert(!g_ctx.rm->textures.contains("voxel"));
-    assert(!g_ctx.rm->textures.contains("velocity"));
-    g_ctx.rm->textures["voxel"] = Texture { "voxel", voxel_img };
-    g_ctx.rm->textures["velocity"] = Texture { "velocity", velocity_img };
-
     createMatsBuffer();
     createVertPosBuffer();
     createRenderPass();
     createFramebuffer();
+    createVoxelTex();
     createVoxelizationPipeline(cfg);
     createVelocityRecordPipeline(cfg);
     createVertexPosPipeline(cfg);
+
+    Image& velocity_img = attachments.getAttachment("velocity");
+    assert(!g_ctx.rm->textures.contains("voxel"));
+    assert(!g_ctx.rm->textures.contains("velocity"));
+    g_ctx.rm->textures["voxel"] = Texture { "voxel", voxel_tex };
+    g_ctx.rm->textures["velocity"] = Texture { "velocity", velocity_img };
 }
 
 void Voxelization::createMatsBuffer()
@@ -96,7 +96,7 @@ void Voxelization::createMatsBuffer()
     for (int i = 0; i < config.dimension[1]; ++i) {
         const float left = -config.size[0] / 2.f, right = config.size[0] / 2.f, bottom = -config.size[2] / 2.f, top = config.size[2] / 2.f;
         const float farPlane = config.size[1];
-        const float step = farPlane / config.dimension[1];
+        const float step = farPlane / static_cast<float>(config.dimension[1]);
         const float half_step = step * 0.5f;
         // Near plane matches the depth of the current slice
         proj_mats[i] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step + half_step, farPlane);
@@ -170,6 +170,31 @@ void Voxelization::createRenderPass()
     };
 
     render_pass = MultiSubpassRenderPass(attachment_descriptions, helpers, dependencies);
+}
+
+void Voxelization::createVoxelTex()
+{
+    voxel_tex = Image::New(
+        g_ctx.vk,
+        VK_FORMAT_R8_UINT,
+        { config.dimension[0], config.dimension[2], 1 },
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
+        config.dimension[1],
+        true,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_TYPE_2D,
+        VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+    voxel_tex.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    staging_buffer = Buffer::New(
+        g_ctx.vk,
+        config.dimension[0] * config.dimension[1] * config.dimension[2] * sizeof(uint8_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    staging_buffer.ClearSingleTime(g_ctx.vk);
 }
 
 void Voxelization::createFramebuffer()
@@ -607,6 +632,10 @@ void Voxelization::record(uint32_t swapchain_index)
     }
 
     vkCmdEndRenderPass(g_ctx.vk.commandBuffer);
+
+    // Copy the stencil image to voxel image for CUDA readback
+    attachments->getAttachment("voxel").CopyTo(g_ctx.vk, staging_buffer, VK_IMAGE_ASPECT_STENCIL_BIT, { config.dimension[0], config.dimension[2], 1 }, config.dimension[1]);
+    staging_buffer.CopyTo(g_ctx.vk, voxel_tex, { config.dimension[0], config.dimension[2], 1 }, config.dimension[1]);
 }
 
 void Voxelization::onResize()

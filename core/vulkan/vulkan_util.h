@@ -107,6 +107,7 @@ void copyBufferToImage(
     VkImageLayout imageLayout,
     VkFormat format,
     const VkExtent3D& extent,
+    const uint32_t layerCount        = 1,
     const uint32_t mipLevel          = 0,
     const VkOffset3D& imageOffset    = { 0, 0, 0 },
     const VkDeviceSize& bufferOffset = 0);
@@ -117,6 +118,7 @@ void copyBufferToImageSingleTime(
     VkImageLayout imageLayout,
     VkFormat format,
     const VkExtent3D& extent,
+    const uint32_t layerCount        = 1,
     const uint32_t mipLevel          = 0,
     const VkOffset3D& imageOffset    = { 0, 0, 0 },
     const VkDeviceSize& bufferOffset = 0);
@@ -126,7 +128,9 @@ void copyImageToBuffer(
     VkBuffer buffer,
     VkImageLayout imageLayout,
     VkFormat format,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    const uint32_t numLayers         = 1,
     const uint32_t mipLevel          = 0,
     const VkOffset3D& imageOffset    = { 0, 0, 0 },
     const VkDeviceSize& bufferOffset = 0);
@@ -136,7 +140,9 @@ void copyImageToBufferSingleTime(
     VkBuffer buffer,
     VkImageLayout imageLayout,
     VkFormat format,
+    VkImageAspectFlags flag,
     const VkExtent3D& extent,
+    const uint32_t numLayers         = 1,
     const uint32_t mipLevel          = 0,
     const VkOffset3D& imageOffset    = { 0, 0, 0 },
     const VkDeviceSize& bufferOffset = 0);
