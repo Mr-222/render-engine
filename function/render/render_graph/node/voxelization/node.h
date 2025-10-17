@@ -41,6 +41,7 @@ class Voxelization : public RenderGraphNode {
 
     Vk::Image voxel_tex;
     Vk::Buffer staging_buffer;
+    Vk::Image voxel_tex_3d;
 
     std::vector<Vk::Buffer> vert_pos_buffers;
 
