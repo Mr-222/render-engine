@@ -3,7 +3,6 @@
 #include "core/config/config.h"
 #include "core/vulkan/debug_messager.h"
 #include "core/vulkan/queue_family_indices.h"
-#include <vulkan/vulkan.h>
 #ifdef _WIN64
 // Don't define min() and max()
 #define NOMINMAX

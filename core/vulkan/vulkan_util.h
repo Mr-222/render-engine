@@ -1,10 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <filesystem>
 #include <functional>
-#include <glm/glm.hpp>
-#include <string>
 #include <vulkan/vulkan.h>
 #ifdef _WIN64
 // Don't define min() and max()
