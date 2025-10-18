@@ -19,10 +19,6 @@ class GLFWwindow;
 
 namespace Vk {
 
-inline PFN_vkCmdBeginTransformFeedbackEXT       vkCmdBeginTransformFeedbackEXT = nullptr;
-inline PFN_vkCmdEndTransformFeedbackEXT         vkCmdEndTransformFeedbackEXT = nullptr;
-inline PFN_vkCmdBindTransformFeedbackBuffersEXT vkCmdBindTransformFeedbackBuffersEXT = nullptr;
-
 struct Image;
 
 struct Context {
@@ -73,7 +69,6 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     void pickPhysicalDevice();
     void createLogicalDeviceAndQueue();
-    void loadFunctions();
 
     void createSurface();
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

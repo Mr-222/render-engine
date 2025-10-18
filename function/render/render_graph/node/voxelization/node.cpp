@@ -621,14 +621,14 @@ void Voxelization::record(uint32_t swapchain_index)
 
         bindDescriptorSet(0, vertex_pos_pipeline.layout, g_ctx.dm.getParameterSet(obj.paramBuffer.id));
         constexpr VkDeviceSize offsets[] = { 0 };
-        Vk::vkCmdBindTransformFeedbackBuffersEXT(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[i].buffer, offsets, nullptr);
-        Vk::vkCmdBeginTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
+        fpCmdBindTransformFeedbackBuffersEXTHandle(g_ctx.vk.commandBuffer, 0, 1, &vert_pos_buffers[i].buffer, offsets, nullptr);
+        fpCmdBeginTransformFeedbackEXTHandle(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
 
         vkCmdBindVertexBuffers(g_ctx.vk.commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, offsets);
         vkCmdBindIndexBuffer(g_ctx.vk.commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(g_ctx.vk.commandBuffer, mesh.data.indices.size(), 1, 0, 0, 0);
 
-        Vk::vkCmdEndTransformFeedbackEXT(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
+        fpCmdEndTransformFeedbackEXTHandle(g_ctx.vk.commandBuffer, 0, 0, nullptr, nullptr);
     }
 
     vkCmdEndRenderPass(g_ctx.vk.commandBuffer);

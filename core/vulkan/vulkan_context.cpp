@@ -97,8 +97,7 @@ void Context::createInstance()
         instance, "vkGetMemoryWin32HandleKHR");
     if (fpGetMemoryWin32Handle == NULL) {
         throw std::runtime_error(
-            "Vulkan: Proc address for \"vkGetMemoryWin32HandleKHR\" not "
-            "found.\n");
+            "Vulkan: Proc address for \"vkGetMemoryWin32HandleKHR\" not found.\n");
     }
 #else
     fpGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)vkGetInstanceProcAddr(
@@ -108,6 +107,24 @@ void Context::createInstance()
             "Vulkan: Proc address for \"vkGetMemoryFdKHR\" not found.\n");
     }
 #endif
+    fpCmdBeginTransformFeedbackEXTHandle = (PFN_vkCmdBeginTransformFeedbackEXT)vkGetInstanceProcAddr(
+        instance, "vkCmdBeginTransformFeedbackEXT");
+    if (fpCmdBeginTransformFeedbackEXTHandle == NULL) {
+        throw std::runtime_error(
+            "Vulkan: Proc address for \"vkCmdBeginTransformFeedbackEXT\" not found.\n");
+    }
+    fpCmdEndTransformFeedbackEXTHandle = (PFN_vkCmdEndTransformFeedbackEXT)vkGetInstanceProcAddr(
+        instance, "vkCmdEndTransformFeedbackEXT");
+    if (fpCmdEndTransformFeedbackEXTHandle == NULL) {
+        throw std::runtime_error(
+            "Vulkan: Proc address for \"vkCmdEndTransformFeedbackEXT\" not found.\n");
+    }
+    fpCmdBindTransformFeedbackBuffersEXTHandle = (PFN_vkCmdBindTransformFeedbackBuffersEXT)vkGetInstanceProcAddr(
+        instance, "vkCmdBindTransformFeedbackBuffersEXT");
+    if (fpCmdBindTransformFeedbackBuffersEXTHandle == NULL) {
+        throw std::runtime_error(
+            "Vulkan: Proc address for \"vkCmdBindTransformFeedbackBuffersEXT\" not found.\n");
+    }
 }
 
 bool Context::checkValidationLayerSupport()
@@ -261,17 +278,6 @@ void Context::createLogicalDeviceAndQueue()
 
     vkGetDeviceQueue(device, queueFamilyIndices.graphicsFamily.value(), 0, &queue);
     vkGetDeviceQueue(device, queueFamilyIndices.presentFamily.value(), 0, &presentQueue);
-}
-
-void Context::loadFunctions()
-{
-    vkCmdBeginTransformFeedbackEXT = reinterpret_cast<PFN_vkCmdBeginTransformFeedbackEXT>(vkGetDeviceProcAddr(device, "vkCmdBeginTransformFeedbackEXT"));
-    vkCmdEndTransformFeedbackEXT   = reinterpret_cast<PFN_vkCmdEndTransformFeedbackEXT>(vkGetDeviceProcAddr(device, "vkCmdEndTransformFeedbackEXT"));
-    vkCmdBindTransformFeedbackBuffersEXT = reinterpret_cast<PFN_vkCmdBindTransformFeedbackBuffersEXT>(vkGetDeviceProcAddr(device, "vkCmdBindTransformFeedbackBuffersEXT"));
-
-    if (!vkCmdBeginTransformFeedbackEXT || !vkCmdEndTransformFeedbackEXT || !vkCmdBindTransformFeedbackBuffersEXT) {
-        throw std::runtime_error("failed to load Vulkan extension functions.");
-    }
 }
 
 void Context::createSurface()
@@ -436,7 +442,6 @@ void Context::initVulkan()
     pickPhysicalDevice();
     queueFamilyIndices = QueueFamilyIndices::findQueueFamilies(physicalDevice, surface);
     createLogicalDeviceAndQueue();
-    loadFunctions();
     createCommandPoolAndBuffer();
 
     createSwapChain();

@@ -191,6 +191,9 @@ extern PFN_vkGetMemoryFdKHR fpGetMemoryFdKHR;
 extern PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR;
 int getVkSemaphoreHandle(const Context& ctx, VkSemaphore& semaphore);
 #endif
+extern PFN_vkCmdBeginTransformFeedbackEXT fpCmdBeginTransformFeedbackEXTHandle;
+extern PFN_vkCmdEndTransformFeedbackEXT fpCmdEndTransformFeedbackEXTHandle;
+extern PFN_vkCmdBindTransformFeedbackBuffersEXT fpCmdBindTransformFeedbackBuffersEXTHandle;
 
 #ifdef _WIN64
 class WindowsSecurityAttributes {

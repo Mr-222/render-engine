@@ -2,7 +2,6 @@
 #include "core/tool/sh.h"
 #include "core/vulkan/vulkan_context.h"
 #include <stdexcept>
-#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -22,8 +21,10 @@ PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32Handle;
 #else
 PFN_vkGetMemoryFdKHR fpGetMemoryFdKHR;
 PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR;
-
 #endif
+PFN_vkCmdBeginTransformFeedbackEXT fpCmdBeginTransformFeedbackEXTHandle;
+PFN_vkCmdEndTransformFeedbackEXT fpCmdEndTransformFeedbackEXTHandle;
+PFN_vkCmdBindTransformFeedbackBuffersEXT fpCmdBindTransformFeedbackBuffersEXTHandle;
 
 uint32_t findMemoryType(const Context& ctx, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
