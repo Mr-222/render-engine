@@ -137,22 +137,9 @@ void Image::Update(const Context& ctx, const void* data, uint32_t mipLevel)
 void Image::CopyTo(
     const Context& ctx,
     Image& dst,
-    const VkExtent3D& extent,
     uint32_t srcMipLevel,
-    uint32_t dstMipLevel,
-    const VkOffset3D& srcOffset,
-    const VkOffset3D& dstOffset) const
+    uint32_t dstMipLevel) const
 {
-    if (srcOffset.x + extent.width > this->extent.width
-        || srcOffset.y + extent.height > this->extent.height
-        || srcOffset.z + extent.depth > this->extent.depth)
-        throw std::runtime_error("image overflow");
-
-    if (dstOffset.x + extent.width > dst.extent.width
-        || dstOffset.y + extent.height > dst.extent.height
-        || dstOffset.z + extent.depth > dst.extent.depth)
-        throw std::runtime_error("image overflow");
-
     copyImageToImage(
         ctx.commandBuffer,
         image,
@@ -161,28 +148,17 @@ void Image::CopyTo(
         dst.layout,
         format,
         dst.format,
-        extent,
-        srcMipLevel,
-        dstMipLevel,
-        srcOffset,
-        dstOffset);
+        { extent.width, extent.height, numLayers > 1 ? numLayers : extent.depth },
+        numLayers,
+        dst.numLayers);
 }
 
 void Image::CopyTo(
     const Context& ctx,
     Buffer& dst,
     VkImageAspectFlags flag,
-    const VkExtent3D& extent,
-    uint32_t layerCount,
-    uint32_t mipLevel,
-    const VkOffset3D& srcOffset,
-    size_t dstOffset) const
+    uint32_t mipLevel) const
 {
-    if (srcOffset.x + extent.width > this->extent.width
-        || srcOffset.y + extent.height > this->extent.height
-        || srcOffset.z + extent.depth > this->extent.depth)
-        throw std::runtime_error("image overflow");
-
     copyImageToBuffer(
         ctx.commandBuffer,
         image,
@@ -191,31 +167,16 @@ void Image::CopyTo(
         format,
         flag,
         extent,
-        layerCount,
-        mipLevel,
-        srcOffset,
-        dstOffset);
+        numLayers,
+        mipLevel);
 }
 
 void Image::CopyToSingleTime(
     const Context& ctx,
     Image& dst,
-    const VkExtent3D& extent,
     uint32_t srcMipLevel,
-    uint32_t dstMipLevel,
-    const VkOffset3D& srcOffset,
-    const VkOffset3D& dstOffset) const
+    uint32_t dstMipLevel) const
 {
-    if (srcOffset.x + extent.width > this->extent.width
-        || srcOffset.y + extent.height > this->extent.height
-        || srcOffset.z + extent.depth > this->extent.depth)
-        throw std::runtime_error("image overflow");
-
-    if (dstOffset.x + extent.width > dst.extent.width
-        || dstOffset.y + extent.height > dst.extent.height
-        || dstOffset.z + extent.depth > dst.extent.depth)
-        throw std::runtime_error("image overflow");
-
     copyImageToImageSingleTime(
         ctx,
         image,
@@ -224,28 +185,19 @@ void Image::CopyToSingleTime(
         dst.layout,
         format,
         dst.format,
-        extent,
+        { extent.width, extent.height, numLayers > 1 ? numLayers : extent.depth },
+        numLayers,
+        dst.numLayers,
         srcMipLevel,
-        dstMipLevel,
-        srcOffset,
-        dstOffset);
+        dstMipLevel);
 }
 
 void Image::CopyToSingleTime(
     const Context& ctx,
     Buffer& dst,
     VkImageAspectFlags flag,
-    const VkExtent3D& extent,
-    uint32_t layerCount,
-    uint32_t mipLevel,
-    const VkOffset3D& srcOffset,
-    size_t dstOffset) const
+    uint32_t mipLevel) const
 {
-    if (srcOffset.x + extent.width > this->extent.width
-        || srcOffset.y + extent.height > this->extent.height
-        || srcOffset.z + extent.depth > this->extent.depth)
-        throw std::runtime_error("image overflow");
-
     copyImageToBuffer(
         ctx.commandBuffer,
         image,
@@ -254,10 +206,8 @@ void Image::CopyToSingleTime(
         format,
         flag,
         extent,
-        layerCount,
-        mipLevel,
-        srcOffset,
-        dstOffset);
+        numLayers,
+        mipLevel);
 }
 
 void Image::Delete(const Context& ctx, Image& i)

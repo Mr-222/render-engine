@@ -3,6 +3,8 @@
 #include "core/tool/uuid.h"
 #include <vulkan/vulkan_core.h>
 
+#include "core/vulkan/vulkan_context.h"
+
 namespace Vk {
 struct Context;
 struct Image;
@@ -51,8 +53,13 @@ struct Buffer {
         size_t srcOffset            = 0,
         const VkOffset3D& dstOffset = { 0, 0, 0 }) const;
     void Clear(const Context& ctx) const;
-    // No need to submit command buffer
     void ClearSingleTime(const Context& ctx) const;
+    void Barrier(
+        const Context& ctx,
+        VkPipelineStageFlags srcStageMask,
+        VkPipelineStageFlags dstStageMask,
+        VkAccessFlags srcAccessMask,
+        VkAccessFlags dstAccessMask) const;
 
     uuid::UUID id = uuid::nil_uuid();
     VkBuffer buffer;

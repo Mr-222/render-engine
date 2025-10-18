@@ -119,8 +119,8 @@ void Buffer::CopyTo(
         || dstOffset.z + extent.depth > dst.extent.depth)
         throw std::runtime_error("image overflow");
 
-    copyBufferToImageSingleTime(
-        ctx,
+    copyBufferToImage(
+        ctx.commandBuffer,
         buffer,
         dst.image,
         dst.layout,
@@ -152,6 +152,34 @@ void Buffer::Clear(const Context &ctx) const {
 void Buffer::ClearSingleTime(const Context &ctx) const {
     clearBufferSingleTime(ctx, buffer);
 }
+
+void Buffer::Barrier(
+    const Context &ctx,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask,
+    VkAccessFlags srcAccessMask,
+    VkAccessFlags dstAccessMask) const
+{
+    VkBufferMemoryBarrier memoryBarrier = {};
+    memoryBarrier.sType                 = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    memoryBarrier.srcAccessMask         = srcAccessMask;
+    memoryBarrier.dstAccessMask         = dstAccessMask;
+    memoryBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+    memoryBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+    memoryBarrier.buffer                = buffer;
+    memoryBarrier.offset                = 0;
+    memoryBarrier.size                  = VK_WHOLE_SIZE;
+
+    vkCmdPipelineBarrier(
+        ctx.commandBuffer,
+        srcStageMask,
+        dstStageMask,
+        0,
+        0, nullptr,
+        1, &memoryBarrier,
+        0, nullptr);
+}
+
 
 void Buffer::Delete(const Context& ctx, Buffer& b)
 {

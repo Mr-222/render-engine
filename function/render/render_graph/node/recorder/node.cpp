@@ -56,7 +56,7 @@ void Record::record(uint32_t swapchain_index)
             ? *g_ctx.vk.swapChainImages[swapchain_index]
             : this->attachments->getAttachment(attachment_descriptions["color"].name);
 
-        image.CopyTo(g_ctx.vk, buffer, VK_IMAGE_ASPECT_COLOR_BIT, image.extent);
+        image.CopyTo(g_ctx.vk, buffer, VK_IMAGE_ASPECT_COLOR_BIT);
         memcpy(data.data(), buffer.mapped, image.extent.width * image.extent.height * 4);
 
         g_ctx.rm->recorder.append(data);

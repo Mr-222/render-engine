@@ -319,6 +319,11 @@ static std::unordered_map<VkImageLayout, LayoutDependency> layoutDependencies = 
           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
           VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT } },
 
+    { VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,
+    LayoutDependency {
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT } },
+
     { VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
       LayoutDependency {
           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,
@@ -366,13 +371,21 @@ void transitionImageLayout(
 
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-    } else {
+    }
+    else if (newLayout == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL || oldLayout == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    else {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
     if (format == VK_FORMAT_D32_SFLOAT) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    } else if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT) {
+    }
+    else if (format == VK_FORMAT_S8_UINT) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    else if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
@@ -546,6 +559,8 @@ void copyImageToImage(
     VkFormat srcFormat,
     VkFormat dstFormat,
     const VkExtent3D& extent,
+    const uint32_t srcLayerCount,
+    const uint32_t dstLayerCount,
     const uint32_t srcMipLevel,
     const uint32_t dstMipLevel,
     const VkOffset3D& srcOffset,
@@ -555,14 +570,14 @@ void copyImageToImage(
         commandBuffer,
         src,
         srcFormat,
-        1,
+        srcLayerCount,
         srcLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     transitionImageLayout(
         commandBuffer,
         dst,
         dstFormat,
-        1,
+        dstLayerCount,
         dstLayout,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -570,18 +585,24 @@ void copyImageToImage(
     region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     region.srcSubresource.mipLevel       = srcMipLevel;
     region.srcSubresource.baseArrayLayer = 0;
-    region.srcSubresource.layerCount     = 1;
+    region.srcSubresource.layerCount     = srcLayerCount;
     region.srcOffset                     = srcOffset;
     region.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     region.dstSubresource.mipLevel       = dstMipLevel;
     region.dstSubresource.baseArrayLayer = 0;
-    region.dstSubresource.layerCount     = 1;
+    region.dstSubresource.layerCount     = dstLayerCount;
     region.dstOffset                     = dstOffset;
     region.extent                        = extent;
+
     if (srcLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || srcLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    else if (srcLayout == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL || srcLayout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL)
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+
     if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
-        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    else if (dstLayout == VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL || dstLayout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL)
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
 
     vkCmdCopyImage(commandBuffer, src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -589,14 +610,14 @@ void copyImageToImage(
         commandBuffer,
         src,
         srcFormat,
-        1,
+        srcLayerCount,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         srcLayout);
     transitionImageLayout(
         commandBuffer,
         dst,
         dstFormat,
-        1,
+        dstLayerCount,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         dstLayout);
 }
@@ -610,13 +631,15 @@ void copyImageToImageSingleTime(
     VkFormat srcFormat,
     VkFormat dstFormat,
     const VkExtent3D& extent,
+    const uint32_t srcLayerCount,
+    const uint32_t dstLayerCount,
     const uint32_t srcMipLevel,
     const uint32_t dstMipLevel,
     const VkOffset3D& srcOffset,
     const VkOffset3D& dstOffset)
 {
     singleTimeCommands(ctx, [&](const VkCommandBuffer& commandBuffer) {
-        copyImageToImage(commandBuffer, src, dst, srcLayout, dstLayout, srcFormat, dstFormat, extent, srcMipLevel, dstMipLevel, srcOffset, dstOffset);
+        copyImageToImage(commandBuffer, src, dst, srcLayout, dstLayout, srcFormat, dstFormat, extent, srcLayerCount, dstLayerCount, srcMipLevel, dstMipLevel, srcOffset, dstOffset);
     });
 }
 

@@ -39,9 +39,8 @@ class Voxelization : public RenderGraphNode {
     std::vector<VkFramebuffer> framebuffers;
     RenderAttachments* attachments;
 
-    Vk::Image voxel_tex;
     Vk::Buffer staging_buffer;
-    Vk::Image voxel_tex_3d;
+    Vk::Image voxel_tex;
 
     std::vector<Vk::Buffer> vert_pos_buffers;
 
@@ -54,7 +53,7 @@ class Voxelization : public RenderGraphNode {
 public:
     Voxelization(
         const std::string& name,
-        const std::string& voxel_tex_name,
+        const std::string& stencil_tex_name,
         const std::string& velocity_tex_name,
         const Configuration& cfg);
 
