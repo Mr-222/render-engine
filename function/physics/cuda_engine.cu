@@ -42,7 +42,7 @@ void CudaEngine::importExtImage(const ExtImageDesc& image_desc)
     static std::unordered_map<VkFormat, cudaChannelFormatDesc> channel_map {
             { VK_FORMAT_R32_SFLOAT, { 32, 0, 0, 0, cudaChannelFormatKindFloat } },
             { VK_FORMAT_R8_UINT,    { 8, 0, 0, 0, cudaChannelFormatKindUnsigned } },
-            { VK_FORMAT_R16G16B16A16_SFLOAT, { 16, 16, 16, 16, cudaChannelFormatKindFloat } }
+            { VK_FORMAT_R32G32B32A32_SFLOAT, { 32, 32, 32, 32, cudaChannelFormatKindFloat } }
     };
 
     assert(image_desc.width * image_desc.height * image_desc.depth == image_desc.image_size / image_desc.element_size);

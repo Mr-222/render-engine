@@ -13,7 +13,7 @@
 
 using namespace Vk;
 
-Voxelization::Voxelization(const std::string& name, const std::string& stencil_tex_name, const std::string& velocity_tex_name, const Configuration& cfg)
+Voxelization::Voxelization(const std::string& name, const std::string& voxel_tex_name, const std::string& velocity_tex_name, const Configuration& cfg)
     : RenderGraphNode(name)
 {
     if (!cfg.contains("voxelizer"))
@@ -21,12 +21,13 @@ Voxelization::Voxelization(const std::string& name, const std::string& stencil_t
     config = cfg.at("voxelizer");
     proj_mats.resize(config.dimension[1]);
 
-    assert(stencil_tex_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
+    assert(voxel_tex_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
+    assert(velocity_tex_name != RenderAttachmentDescription::SWAPCHAIN_IMAGE_NAME());
     attachment_descriptions = {
         {
-            "stencil",
+            "voxel",
             {
-                stencil_tex_name,
+                voxel_tex_name,
                 0,
                 RenderAttachmentType::Stencil | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
@@ -45,8 +46,8 @@ Voxelization::Voxelization(const std::string& name, const std::string& stencil_t
                 RenderAttachmentType::Color | RenderAttachmentType::External | RenderAttachmentType::DontRecreateOnResize,
                 RenderAttachmentRW::Write,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_FORMAT_R16G16B16A16_SFLOAT,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                VK_FORMAT_R32G32B32A32_SFLOAT,
                 { config.dimension[0], config.dimension[2], 1 },
                 config.dimension[1],
             }
@@ -66,11 +67,10 @@ void Voxelization::init(Configuration& cfg, RenderAttachments& attachments)
     createVelocityRecordPipeline(cfg);
     createVertexPosPipeline(cfg);
 
-    Image& velocity_img = attachments.getAttachment("velocity");
     assert(!g_ctx.rm->textures.contains("voxel"));
     assert(!g_ctx.rm->textures.contains("velocity"));
     g_ctx.rm->textures["voxel"] = Texture { "voxel", voxel_tex };
-    g_ctx.rm->textures["velocity"] = Texture { "velocity", velocity_img };
+    g_ctx.rm->textures["velocity"] = Texture { "velocity", velocity_tex };
 }
 
 void Voxelization::createMatsBuffer()
@@ -138,7 +138,7 @@ void Voxelization::createVertPosBuffer()
 void Voxelization::createRenderPass()
 {
     std::vector<AttachmentDescriptionHelper> helpers = {
-        {"stencil", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE },
+        {"voxel", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE },
         { "velocity", VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE }
     };
 
@@ -176,7 +176,7 @@ void Voxelization::createVoxelTex()
 {
     staging_buffer = Buffer::New(
         g_ctx.vk,
-        config.dimension[0] * config.dimension[1] * config.dimension[2] * sizeof(uint8_t),
+        config.dimension[0] * config.dimension[1] * config.dimension[2] * 16, // velocity tex uses R32G32B32A32_SFLOAT
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     staging_buffer.ClearSingleTime(g_ctx.vk);
@@ -195,6 +195,22 @@ void Voxelization::createVoxelTex()
         VK_IMAGE_TYPE_3D,
         VK_IMAGE_VIEW_TYPE_3D);
     voxel_tex.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_GENERAL);
+
+    velocity_tex = Image::New(
+        g_ctx.vk,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        { config.dimension[0], config.dimension[2], config.dimension[1] },
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        1,
+        1,
+        true,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_TYPE_3D,
+        VK_IMAGE_VIEW_TYPE_3D
+    );
+    velocity_tex.TransitionLayoutSingleTime(g_ctx.vk, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 void Voxelization::createFramebuffer()
@@ -202,7 +218,7 @@ void Voxelization::createFramebuffer()
     framebuffers.resize(g_ctx.vk.swapChainImages.size());
     for (int i = 0; i < g_ctx.vk.swapChainImages.size(); ++i) {
         std::array<VkImageView, 2> views = {
-            attachments->getAttachment(attachment_descriptions["stencil"].name).view,
+            attachments->getAttachment(attachment_descriptions["voxel"].name).view,
             attachments->getAttachment(attachment_descriptions["velocity"].name).view,
         };
 
@@ -634,9 +650,14 @@ void Voxelization::record(uint32_t swapchain_index)
     vkCmdEndRenderPass(g_ctx.vk.commandBuffer);
 
     // Copy the stencil image to voxel image for CUDA readback
-    attachments->getAttachment("stencil").CopyTo(g_ctx.vk, staging_buffer, VK_IMAGE_ASPECT_STENCIL_BIT);
+    attachments->getAttachment("voxel").CopyTo(g_ctx.vk, staging_buffer, VK_IMAGE_ASPECT_STENCIL_BIT);
     staging_buffer.Barrier(g_ctx.vk, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
     staging_buffer.CopyTo(g_ctx.vk, voxel_tex, { config.dimension[0], config.dimension[2], config.dimension[1] });
+    // Copy the velocity image to velocity voxel image for CUDA readback
+    staging_buffer.Barrier(g_ctx.vk, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
+    attachments->getAttachment("velocity").CopyTo(g_ctx.vk, staging_buffer, VK_IMAGE_ASPECT_COLOR_BIT);
+    staging_buffer.Barrier(g_ctx.vk, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+    staging_buffer.CopyTo(g_ctx.vk, velocity_tex, { config.dimension[0], config.dimension[2], config.dimension[1] });
 }
 
 void Voxelization::onResize()

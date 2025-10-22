@@ -83,7 +83,7 @@ void main() {
     vec2 segmentVector = intersections[1].Pos - intersections[0].Pos;
     vec2 segmentDir    = normalize(segmentVector);
     vec2 normal        = vec2(-segmentDir.y, segmentDir.x);
-    vec2 thickness     = normal * pipelineParam.projSpacePixDim * 1.41421356f * 2.f; // sqrt(2) * 2, cover two texel diagnal
+    vec2 thickness     = normal * pipelineParam.projSpacePixDim * 1.41421356f * 3.f; // sqrt(2) * 3, cover three texel diagnal
 
     int layer = inInstanceIndex[0];
 

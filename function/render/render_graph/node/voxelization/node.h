@@ -41,6 +41,7 @@ class Voxelization : public RenderGraphNode {
 
     Vk::Buffer staging_buffer;
     Vk::Image voxel_tex;
+    Vk::Image velocity_tex;
 
     std::vector<Vk::Buffer> vert_pos_buffers;
 
@@ -53,7 +54,7 @@ class Voxelization : public RenderGraphNode {
 public:
     Voxelization(
         const std::string& name,
-        const std::string& stencil_tex_name,
+        const std::string& voxel_tex_name,
         const std::string& velocity_tex_name,
         const Configuration& cfg);
 

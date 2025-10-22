@@ -5,7 +5,7 @@ void VoxelizationGraph::init(Configuration& cfg)
     nodes["DefaultObject"]
         = std::move(std::make_unique<DefaultObject>("DefaultObject", "object_color", "depth"));
     nodes["Voxelization"]
-        = std::move(std::make_unique<Voxelization>("Voxelization", "stencil", "velocity", cfg));
+        = std::move(std::make_unique<Voxelization>("Voxelization", "voxel", "velocity", cfg));
     nodes["HDRToSDR"]
         = std::move(std::make_unique<HDRToSDR>("HDRToSDR", "object_color", "sdr_buf"));
     nodes["CalculateLuminance"]
