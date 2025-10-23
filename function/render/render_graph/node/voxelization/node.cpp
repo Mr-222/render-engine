@@ -81,7 +81,7 @@ void Voxelization::createMatsBuffer()
     view_mat = glm::lookAt(
         eye_pos,
         center,
-        glm::vec3(0.0f, 0.0f, -1.0f)
+        glm::vec3(0.0f, 0.0f, 1.0f)
     );
     view_mat_buffer = Buffer::New(
         g_ctx.vk,
@@ -100,7 +100,6 @@ void Voxelization::createMatsBuffer()
         const float half_step = step * 0.5f;
         // Near plane matches the depth of the current slice
         proj_mats[i] = glm::ortho(left, right, bottom, top, static_cast<float>(i) * step + half_step, farPlane);
-        proj_mats[i][1][1] *= -1;
     }
     proj_mats_buffer = Buffer::New(
         g_ctx.vk,
@@ -559,7 +558,6 @@ void Voxelization::setViewportAndScissor()
 
 void Voxelization::updateTime() {
     velocity_pipeline.param.deltaT = g_ctx.frame_time;
-    //INFO_ALL("Delt time: " + std::to_string(velocity_pipeline.param.deltaT) + "s");
     velocity_pipeline.param_buf.Update(g_ctx.vk, &velocity_pipeline.param, sizeof(VelocityParam));
 }
 
