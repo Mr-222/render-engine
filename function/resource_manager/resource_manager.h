@@ -25,6 +25,7 @@ public:
     Recorder recorder;
 
     float inlet_angle;
+    float voxelized_velocity_scaler;
 
     std::unordered_map<std::string, std::unique_ptr<Resource>> resources;
 

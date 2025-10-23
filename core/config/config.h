@@ -131,6 +131,7 @@ struct LFMConfiguration {
     std::array<float, 3> grid_origin;
     float inlet_norm;
     float inlet_angle;
+    float voxelized_velocity_scaler;
     // simulation parameter
     int rk_order;
     // bfecc clamp
@@ -267,6 +268,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     grid_origin,
     inlet_norm,
     inlet_angle,
+    voxelized_velocity_scaler,
     rk_order,
     use_bfecc_clamp,
     use_static_solid,
