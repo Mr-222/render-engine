@@ -42,10 +42,14 @@ void ResourceManager::load(Configuration& config)
         objects.emplace_back(Object::fromConfiguration(cfg));
     }
 
-    if (config.contains("lfm"))
-        inlet_angle = config["lfm"]["inlet_angle"];
-    else
-        inlet_angle = 0;
+    if (config.contains("lfm")) {
+        inlet_angle   = config["lfm"]["inlet_angle"];
+        voxelized_velocity_scaler = config["lfm"]["voxelized_velocity_scaler"];
+    }
+    else {
+        inlet_angle   = 0;
+        voxelized_velocity_scaler = 1.0f;
+    }
     recorder.init(config);
 }
 
