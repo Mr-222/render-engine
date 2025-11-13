@@ -131,8 +131,6 @@ struct LFMConfiguration {
     std::array<float, 3> grid_origin;
     float inlet_norm;
     float inlet_angle;
-    // simulation parameter
-    int rk_order;
     // bfecc clamp
     bool use_bfecc_clamp;
     // staic solid
@@ -267,7 +265,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     grid_origin,
     inlet_norm,
     inlet_angle,
-    rk_order,
     use_bfecc_clamp,
     use_static_solid,
     solid_sdf_path,
