@@ -140,6 +140,8 @@ void RenderEngine::draw()
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
+
+    g_ctx->profiler.printResults();
 }
 
 void RenderEngine::registerImGui(std::function<void(VkCommandBuffer)> fn)

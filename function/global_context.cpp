@@ -13,6 +13,8 @@ void GlobalContext::init(Configuration& config, GLFWwindow* window)
 
     rm = std::make_unique<ResourceManager>();
     rm->load(config);
+
+    profiler.init(vk.device, vk.physicalDevice);
 }
 
 void GlobalContext::cleanup()

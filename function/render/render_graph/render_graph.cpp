@@ -106,6 +106,8 @@ void RenderGraph::record(uint32_t swapchain_index)
 
     //clearAttachments();
 
+    g_ctx.profiler.beginFrame(g_ctx.vk.commandBuffer);
+
     auto degree = in_degree;
     std::queue<std::string> queue;
     for (const auto& node : starting_nodes) {

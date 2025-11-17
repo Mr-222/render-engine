@@ -2,6 +2,7 @@
 
 #include "core/vulkan/descriptor_manager.h"
 #include "core/vulkan/vulkan_context.h"
+#include "core/vulkan/profiler.h"
 
 #ifdef _WIN64
 struct GLFWwindow;
@@ -19,6 +20,7 @@ struct GlobalContext {
 
     Vk::Context vk;
     Vk::DescriptorManager dm;
+    Vk::Profiler profiler;
     std::unique_ptr<ResourceManager> rm;
 
     float frame_time      = 0.0f;

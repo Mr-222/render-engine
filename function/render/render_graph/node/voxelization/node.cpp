@@ -2,6 +2,7 @@
 
 #include "./node.h"
 #include "core/tool/logger.h"
+#include "core/vulkan/profiler.h"
 #include "core/filesystem/file.h"
 #include "core/vulkan/vulkan_util.h"
 #include "function/global_context.h"
@@ -565,6 +566,9 @@ void Voxelization::record(uint32_t swapchain_index)
 {
     updateTime();
     setViewportAndScissor();
+
+    // Profile time for the entire voxelization pass
+    VK_PROFILE_SCOPE(g_ctx.profiler, g_ctx.vk.commandBuffer, "Voxelization");
 
     std::array<VkClearValue, 2> clearValues {};
     clearValues[0].depthStencil = { 1.0f, 0 };
