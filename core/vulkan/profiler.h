@@ -141,7 +141,7 @@ public:
             return;
         }
 
-        INFO_ALL("--- Vulkan Profiler results ---");
+        INFO_ALL("\n--- Vulkan Profiler results ---");
         for (uint32_t i = 0; i < m_currentScope; ++i) {
             uint64_t startTick = m_queryResults[i * 2];
             uint64_t endTick   = m_queryResults[i * 2 + 1];
