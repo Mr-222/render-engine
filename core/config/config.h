@@ -109,7 +109,6 @@ struct RigidCoupleConfiguration {
 struct DriverConfiguration {
     int total_frame;
     int frame_rate;
-    int steps_per_frame;
 };
 
 struct LoggerConfiguration {
@@ -244,8 +243,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     DriverConfiguration,
     total_frame,
-    frame_rate,
-    steps_per_frame);
+    frame_rate);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     LoggerConfiguration,
