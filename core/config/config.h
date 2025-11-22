@@ -123,7 +123,7 @@ struct RecorderConfiguration {
     bool record_from_start;
 };
 
-struct LFMConfiguration {
+struct OFMConfiguration {
     // domain
     float len_y;
     std::array<int, 3> tile_dim;
@@ -139,7 +139,7 @@ struct LFMConfiguration {
     // dynamic solid
     bool use_dynamic_solid;
 
-    static LFMConfiguration Load(const std::string& config_path);
+    static OFMConfiguration Load(const std::string& config_path);
 };
 
 using Configuration = json;
@@ -258,7 +258,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     record_from_start);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    LFMConfiguration,
+    OFMConfiguration,
     len_y,
     tile_dim,
     grid_origin,

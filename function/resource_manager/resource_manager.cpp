@@ -42,10 +42,10 @@ void ResourceManager::load(Configuration& config)
         objects.emplace_back(Object::fromConfiguration(cfg));
     }
 
-    if (config.contains("lfm")) {
-        inlet_angle = config["lfm"]["inlet_angle"];
-        inlet_norm  = config["lfm"]["inlet_norm"];
-        voxelized_velocity_scaler = config["lfm"]["voxelized_velocity_scaler"];
+    if (config.contains("ofm")) {
+        inlet_angle = config["ofm"]["inlet_angle"];
+        inlet_norm  = config["ofm"]["inlet_norm"];
+        voxelized_velocity_scaler = config["ofm"]["voxelized_velocity_scaler"];
     }
     else {
         inlet_angle   = 0;
